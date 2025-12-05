@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wind Loading Calculator - Multi-Sign Preview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .sign-type-selector {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .sign-type-selector h2 {
+            font-size: 18px;
+            color: #1e3c72;
+            margin-bottom: 15px;
+        }
+        
+        .sign-type-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .sign-type-btn {
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+        }
+        
+        .sign-type-btn:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+        
+        .sign-type-btn.active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+        }
+        
+        .sign-type-btn h3 {
+            font-size: 16px;
+            color: #1e3c72;
+            margin-bottom: 8px;
+        }
+        
+        .sign-type-btn p {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .sign-type-btn .standard {
+            font-size: 11px;
+            color: #999;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+        
+        .input-section, .output-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e3c72;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .subsection-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2a5298;
+            margin-bottom: 15px;
+            margin-top: 20px;
+        }
+        
+        .input-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 0.5fr;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .input-row label {
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .input-row input, .input-row select {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .input-row input:focus, .input-row select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .input-row .unit {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .calculate-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 20px;
+        }
+        
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .calculate-btn:active {
+            transform: translateY(0);
+        }
+        
+        .results-grid {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .result-card {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .result-card h4 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .result-card .value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1e3c72;
+        }
+        
+        .result-card .unit {
+            font-size: 14px;
+            color: #999;
+            margin-left: 5px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .status-adequate {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-inadequate {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-review {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .detailed-results {
+            margin-top: 20px;
+        }
+        
+        .collapsible {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .collapsible:hover {
+            background: #f8f9fa;
+        }
+        
+        .collapsible-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .collapsible-header h4 {
+            font-size: 15px;
+            color: #1e3c72;
+        }
+        
+        .collapsible-header .arrow {
+            font-size: 12px;
+            color: #999;
+            transition: transform 0.3s;
+        }
+        
+        .collapsible.active .arrow {
+            transform: rotate(180deg);
+        }
+        
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        .collapsible.active .collapsible-content {
+            max-height: 1000px;
+            margin-top: 15px;
+        }
+        
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+        
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        
+        .detail-row .label {
+            color: #666;
+        }
+        
+        .detail-row .value {
+            font-weight: 600;
+            color: #1e3c72;
+        }
+        
+        .utilization-bar {
+            width: 100%;
+            height: 20px;
+            background: #eee;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        
+        .utilization-fill {
+            height: 100%;
+            transition: width 0.5s, background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .util-low {
+            background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .util-medium {
+            background: linear-gradient(90deg, #ffc107 0%, #fd7e14 100%);
+        }
+        
+        .util-high {
+            background: linear-gradient(90deg, #dc3545 0%, #c82333 100%);
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+        
+        .warning-box h4 {
+            font-size: 14px;
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .warning-box ul {
+            margin-left: 20px;
+            font-size: 13px;
+            color: #856404;
+        }
+        
+        .warning-box li {
+            margin-bottom: 5px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        @media (max-width: 1024px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>BS EN 1991-1-4 Wind Loading Calculator</h1>
+            <p>Professional wind loading calculations for signage structures</p>
+            <p style="font-size: 12px; margin-top: 10px;">Preview Version - All Sign Types</p>
+        </div>
+        
+        <div class="sign-type-selector">
+            <h2>Select Sign Type</h2>
+            <div class="sign-type-buttons">
+                <div class="sign-type-btn active" data-type="wall_mounted" onclick="selectSignType('wall_mounted')">
+                    <h3>🏢 Wall-Mounted Fascia</h3>
+                    <p>Flat signs mounted flush to building walls. Includes pass/fail assessment for typical construction.</p>
+                    <div class="standard">BS EN 1991-1-4 + SCI P394</div>
+                </div>
+                
+                <div class="sign-type-btn" data-type="projecting" onclick="selectSignType('projecting')">
+                    <h3>📐 Projecting Sign</h3>
+                    <p>Signs projecting from walls on brackets. Includes bracket forces, anchor checks, and deflection analysis.</p>
+                    <div class="standard">EN 1991-1-4 (Eurocode)</div>
+                </div>
+                
+                <div class="sign-type-btn" data-type="post_mounted" onclick="selectSignType('post_mounted')">
+                    <h3>🚏 Post-Mounted Sign</h3>
+                    <p>Free-standing signs on posts. Includes overturning moments, post stress, and foundation checks.</p>
+                    <div class="standard">BS EN 1991-1-4 + SCI P394</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <!-- INPUT SECTION -->
+            <div class="input-section">
+                <h2 class="section-title">Input Parameters</h2>
+                
+                <!-- Wall-Mounted Inputs -->
+                <div id="wall-inputs" class="sign-inputs">
+                    <div class="subsection-title">Sign Dimensions</div>
+                    <div class="input-row">
+                        <label>Width (horizontal)</label>
+                        <input type="number" id="wall-width" value="3.0" step="0.1">
+                        <span class="unit">m</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Height (vertical)</label>
+                        <input type="number" id="wall-height" value="2.0" step="0.1">
+                        <span class="unit">m</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Depth (projection)</label>
+                        <input type="number" id="wall-depth" value="0.3" step="0.1">
+                        <span class="unit">m</span>
+                    </div>
+                    
+                    <div class="subsection-title">Location</div>
+                    <div class="input-row">
+                        <label>Building height</label>
+                        <input type="number" id="wall-building-height" value="10.0" step="0.5">
+                        <span class="unit">m</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Site altitude</label>
+                        <input type="number" id="wall-altitude" value="50" step="10">
+                        <span class="unit">m</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Wind speed (v_map)</label>
+                        <input type="number" id="wall-vmap" value="22.5" step="0.5">
+                        <span class="unit">m/s</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Distance to shore</label>
+                        <input type="number" id="wall-shore" value="20" step="5">
+                    <div class="subsection-title">Sign Dimensions</div>
+                    <div class="input-row">
+                        <label>Width (parallel to wall)</label>
+                        <input type="number" id="proj-width" value="2.0" step="0.1">
+                        <span class="unit">m</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Height</label>
+                        <input type="number" id="proj-height" value="1.5" step="0.1">
+                        <span class="unit">m</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Projection from wall</label>
+                        <input type="number" id="proj-projection" value="0.6" step="0.1">
+                        <span class="unit">m</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Sign weight</label>
+                        <input type="number" id="proj-weight" value="0.15" step="0.05">
+                        <span class="unit">kN</span>
+                    </div>
+                    
+                    <div class="subsection-title">Location</div>
+                    <div class="input-row">
+                        <label>Mounting height (centroid)</label>
+                        <input type="number" id="proj-height-mount" value="4.5" step="0.5">
+                        <span class="unit">m</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Wind speed (v_b,0)</label>
+                        <input type="number" id="proj-vmap" value="22.5" step="0.5">
+                        <span class="unit">m/s</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Terrain category</label>
+                        <select id="proj-terrain">
+                            <option value="0">0 - Sea/coastal</option>
+                            <option value="II">II - Low vegetation</option>
+                            <option value="III" selected>III - Suburban</option>
+                            <option value="IV">IV - Urban</option>
+                        </select>
+                        <span class="unit"></span>
+                    </div>
+                    
+                    <div class="subsection-title">Brackets & Fixings</div>
+                    <div class="input-row">
+                        <label>Number of brackets</label>
+                        <input type="number" id="proj-brackets" value="2" step="1" min="1">
+                        <span class="unit"></span>
+                    </div>
+                    <div class="input-row">
+                        <label>Bracket spacing</label>
+                        <input type="number" id="proj-spacing" value="1.2" step="0.1">
+                        <span class="unit">m</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Fixings per bracket</label>
+                        <input type="number" id="proj-fixings" value="4" step="1" min="2">
+                        <span class="unit"></span>
+                    </div>
+                    <div class="input-row">
+                        <label>Anchor tension (N_Rk)</label>
+                        <input type="number" id="proj-anchor-n" value="12.0" step="1">
+                        <span class="unit">kN</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Anchor shear (V_Rk)</label>
+                        <input type="number" id="proj-anchor-v" value="8.0" step="1">
+                        <span class="unit">kN</span>
+                    </div>
+                    
+                    <div class="subsection-title">Bracket Details</div>
+                    <div class="input-row">
+                        <label>Bracket width (RHS)</label>
+                        <input type="number" id="proj-bracket-width" value="80" step="10">
+                        <span class="unit">mm</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Bracket depth (RHS)</label>
+                        <input type="number" id="proj-bracket-depth" value="60" step="10">
+                        <span class="unit">mm</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Bracket thickness</label>
+                        <input type="number" id="proj-bracket-thickness" value="5" step="1">
+                        <span class="unit">mm</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Bracket steel grade</label>
+                        <select id="proj-bracket-steel">
+                            <option value="235">S235 (f_y = 235 N/mm²)</option>
+                            <option value="275" selected>S275 (f_y = 275 N/mm²)</option>
+                            <option value="355">S355 (f_y = 355 N/mm²)</option>
+                        </select>
+                        <span class="unit"></span>
+                    </div>
+                </div>
+                
+                <!-- Post-Mounted Inputs -->
+                <div id="post-inputs" class="sign-inputs hidden">
+                    <div class="subsection-title">Sign Dimensions</div>
+                    <div class="input-row">
+                        <label>Width</label>
+                        <input type="number" id="post-width" value="3.0" step="0.1">
+                        <span class="unit">m</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Height</label>
+                        <input type="number" id="post-height-sign" value="2.0" step="0.1">
+                        <span class="unit">m</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Depth/thickness</label>
+                        <input type="number" id="post-depth" value="0.3" step="0.1">
+                        <span class="unit">m</span>
+                    </div>
+                    
+                    <div class="subsection-title">Post Configuration</div>
+                    <div class="input-row">
+                        <label>Sign base height</label>
+                        <input type="number" id="post-base-height" value="2.5" step="0.5">
+                        <span class="unit">m</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Total post height</label>
+                        <input type="number" id="post-height-total" value="4.5" step="0.5">
+                        <span class="unit">m</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Post section type</label>
+                        <select id="post-section-type" onchange="updatePostDimensionLabel()">
+                            <option value="circular" selected>Circular (CHS)</option>
+                            <option value="square">Square (SHS)</option>
+                        </select>
+                        <span class="unit"></span>
+                    </div>
+                    <div class="input-row">
+                        <label id="post-size-label">Post diameter</label>
+                        <input type="number" id="post-diameter" value="150" step="10">
+                        <span class="unit">mm</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Post wall thickness</label>
+                        <input type="number" id="post-thickness" value="8" step="1">
+                        <span class="unit">mm</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Post material</label>
+                        <select id="post-material" onchange="updatePostMaterialGrade()">
+                            <option value="steel" selected>Steel</option>
+                            <option value="aluminium">Aluminium</option>
+                            <option value="timber">Timber</option>
+                        </select>
+                        <span class="unit"></span>
+                    </div>
+                    <div class="input-row" id="post-grade-row">
+                        <label id="post-grade-label">Steel grade</label>
+                        <select id="post-grade">
+                            <option value="235">S235 (f_y = 235 N/mm²)</option>
+                            <option value="275" selected>S275 (f_y = 275 N/mm²)</option>
+                            <option value="355">S355 (f_y = 355 N/mm²)</option>
+                        </select>
+                        <span class="unit"></span>
+                    </div>
+                    
+                    <div class="subsection-title">Location</div>
+                    <div class="input-row">
+                        <label>Site altitude</label>
+                        <input type="number" id="post-altitude" value="50" step="10">
+                        <span class="unit">m</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Wind speed (v_map)</label>
+                        <input type="number" id="post-vmap" value="22.5" step="0.5">
+                        <span class="unit">m/s</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Distance to shore</label>
+                        <input type="number" id="post-shore" value="20" step="5">
+                        <span class="unit">km</span>
+                    </div>
+                    <div class="input-row">
+                        <label>Terrain type</label>
+                        <select id="post-terrain">
+                            <option value="sea">Sea</option>
+                            <option value="country" selected>Country</option>
+                            <option value="town">Town</option>
+                        </select>
+                        <span class="unit"></span>
+                    </div>
+                    <div class="input-row">
+                        <label>Foundation embedment</label>
+                        <input type="number" id="post-embedment" value="1.5" step="0.1">
+                        <span class="unit">m</span>
+                    </div>
+                </div>
+                
+                <button class="calculate-btn" onclick="calculate()">Calculate Wind Loading</button>
+            </div>
+            
+            <!-- OUTPUT SECTION -->
+            <div class="output-section">
+                <h2 class="section-title">Results</h2>
+                
+                <div id="results-container">
+                    <p style="text-align: center; color: #999; padding: 40px 0;">
+                        Click "Calculate Wind Loading" to see results
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentSignType = 'wall_mounted';
+        
+        function updatePostDimensionLabel() {
+            const sectionType = document.getElementById('post-section-type').value;
+            const label = document.getElementById('post-size-label');
+            if (sectionType === 'circular') {
+                label.textContent = 'Post diameter';
+            } else {
+                label.textContent = 'Post width (square)';
+            }
+        }
+        
+        function updatePostMaterialGrade() {
+            const material = document.getElementById('post-material').value;
+            const gradeLabel = document.getElementById('post-grade-label');
+            const gradeSelect = document.getElementById('post-grade');
+            const thicknessRow = document.getElementById('post-thickness').closest('.input-row');
+            
+            if (material === 'steel') {
+                gradeLabel.textContent = 'Steel grade';
+                gradeSelect.innerHTML = `
+                    <option value="235">S235 (f_y = 235 N/mm²)</option>
+                    <option value="275" selected>S275 (f_y = 275 N/mm²)</option>
+                    <option value="355">S355 (f_y = 355 N/mm²)</option>
+                `;
+                thicknessRow.style.display = '';  // Show thickness
+            } else if (material === 'aluminium') {
+                gradeLabel.textContent = 'Aluminium grade';
+                gradeSelect.innerHTML = `
+                    <option value="240">6082-T6 (f_y = 260 N/mm²)</option>
+                    <option value="240" selected>6061-T6 (f_y = 240 N/mm²)</option>
+                    <option value="160">6063-T6 (f_y = 160 N/mm²)</option>
+                `;
+                thicknessRow.style.display = '';  // Show thickness
+            } else { // timber
+                gradeLabel.textContent = 'Timber grade';
+                gradeSelect.innerHTML = `
+                    <option value="16">C16 (f_m,k = 16 N/mm²)</option>
+                    <option value="24" selected>C24 (f_m,k = 24 N/mm²)</option>
+                    <option value="27">C27 (f_m,k = 27 N/mm²)</option>
+                    <option value="24">GL24h (f_m,k = 24 N/mm²)</option>
+                `;
+                thicknessRow.style.display = 'none';  // Hide thickness (solid section)
+            }
+        }
+        
+        function selectSignType(type) {
+            currentSignType = type;
+            
+            // Update button states
+            document.querySelectorAll('.sign-type-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-type="${type}"]`).classList.add('active');
+            
+            // Show/hide input sections
+            document.querySelectorAll('.sign-inputs').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Map sign types to input IDs
+            const inputMap = {
+                'wall_mounted': 'wall-inputs',
+                'projecting': 'projecting-inputs',
+                'post_mounted': 'post-inputs'
+            };
+            
+            document.getElementById(inputMap[type]).classList.remove('hidden');
+            
+            // Clear results
+            document.getElementById('results-container').innerHTML = `
+                <p style="text-align: center; color: #999; padding: 40px 0;">
+                    Click "Calculate Wind Loading" to see results
+                </p>
+            `;
+        }
+        
+        function calculate() {
+            // Simulate calculation (in real version, this would call the API)
+            const results = simulateCalculation();
+            displayResults(results);
+        }
+        
+        function simulateCalculation() {
+            // This simulates the backend calculation
+            // In production, this would be an API call
+            
+            if (currentSignType === 'wall_mounted') {
+                return {
+                    sign_type: 'wall_mounted',
+                    peak_pressure: 828,
+                    wind_force: 5.46,
+                    overturning_moment: 27.3,
+                    design_wind_speed: 24.3,
+                    calculation_summary: {
+                        v_map: 22.5,
+                        c_alt: 1.05,
+                        c_dir: 1.0,
+                        c_e: 2.5,
+                        c_s: 0.89,
+                        c_d: 1.07,
+                        c_f: 1.1,
+                        A_ref: 6.0
+                    },
+                    assessment: {
+                        overall_status: 'ADEQUATE',
+                        pressure_check: 'PASS',
+                        typical_construction: 'ADEQUATE'
+                    }
+                };
+            } else if (currentSignType === 'projecting') {
+                return {
+                    sign_type: 'projecting',
+                    peak_pressure: 422.8,
+                    wind_force: 2.54,
+                    design_wind_force: 3.81,
+                    bracket_forces: {
+                        V_per_bracket: 1.90,
+                        M_per_bracket: 1.14,
+                        N_tension_max: 2.01
+                    },
+                    anchor_check: {
+                        eta_tension: 0.479,
+                        eta_shear: 0.089,
+                        eta_combined: 0.568,
+                        combined_status: 'PASS'
+                    },
+                    bracket_check: {
+                        eta_bending: 0.175,
+                        eta_shear: 0.020,
+                        bending_status: 'PASS'
+                    },
+                    deflection_check: {
+                        delta: 0.61,
+                        delta_limit: 4.0,
+                        eta_deflection: 0.153,
+                        deflection_status: 'PASS'
+                    },
+                    overall_status: 'ADEQUATE'
+                };
+            } else { // post_mounted
+                return {
+                    sign_type: 'post_mounted',
+                    peak_pressure: 828,
+                    wind_force: 5.86,
+                    overturning_moment: 20.01,
+                    post_check: {
+                        eta_bending: 0.605,
+                        eta_shear: 0.010,
+                        bending_status: 'PASS'
+                    },
+                    foundation_check: {
+                        status: 'ADEQUATE',
+                        message: 'Embedment depth appears adequate'
+                    },
+                    overall_status: 'ADEQUATE'
+                };
+            }
+        }
+        
+        function displayResults(results) {
+            let html = '';
+            
+            // Main results cards
+            html += '<div class="results-grid">';
+            
+            html += `
+                <div class="result-card">
+                    <h4>Peak Velocity Pressure</h4>
+                    <div class="value">${results.peak_pressure.toFixed(1)}<span class="unit">Pa</span></div>
+                </div>
+            `;
+            
+            html += `
+                <div class="result-card">
+                    <h4>Wind Force</h4>
+                    <div class="value">${results.wind_force.toFixed(2)}<span class="unit">kN</span></div>
+                </div>
+            `;
+            
+            if (results.overturning_moment) {
+                html += `
+                    <div class="result-card">
+                        <h4>Overturning Moment</h4>
+                        <div class="value">${results.overturning_moment.toFixed(2)}<span class="unit">kNm</span></div>
+                    </div>
+                `;
+            }
+            
+            // Overall status
+            const statusClass = results.overall_status === 'ADEQUATE' ? 'status-adequate' : 
+                               results.overall_status === 'INADEQUATE' ? 'status-inadequate' : 'status-review';
+            html += `
+                <div class="result-card">
+                    <h4>Overall Assessment</h4>
+                    <div class="status-badge ${statusClass}">${results.overall_status}</div>
+                </div>
+            `;
+            
+            html += '</div>';
+            
+            // Detailed results
+            html += '<div class="detailed-results">';
+            
+            if (currentSignType === 'wall_mounted') {
+                html += generateWallMountedDetails(results);
+            } else if (currentSignType === 'projecting') {
+                html += generateProjectingDetails(results);
+            } else {
+                html += generatePostMountedDetails(results);
+            }
+            
+            html += '</div>';
+            
+            // Warnings
+            html += generateWarnings(currentSignType);
+            
+            document.getElementById('results-container').innerHTML = html;
+            
+            // Add collapsible functionality
+            document.querySelectorAll('.collapsible').forEach(item => {
+                item.addEventListener('click', function() {
+                    this.classList.toggle('active');
+                });
+            });
+        }
+        
+        function generateWallMountedDetails(results) {
+            return `
+                <div class="collapsible">
+                    <div class="collapsible-header">
+                        <h4>📊 Calculation Summary</h4>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="detail-row">
+                            <span class="label">Fundamental wind speed (v_map)</span>
+                            <span class="value">${results.calculation_summary.v_map.toFixed(1)} m/s</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Altitude factor (c_alt)</span>
+                            <span class="value">${results.calculation_summary.c_alt.toFixed(3)}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Directional factor (c_dir)</span>
+                            <span class="value">${results.calculation_summary.c_dir.toFixed(2)}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Exposure factor (c_e)</span>
+                            <span class="value">${results.calculation_summary.c_e.toFixed(3)}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Size factor (c_s)</span>
+                            <span class="value">${results.calculation_summary.c_s.toFixed(3)}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Dynamic factor (c_d)</span>
+                            <span class="value">${results.calculation_summary.c_d.toFixed(3)}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Force coefficient (c_f)</span>
+                            <span class="value">${results.calculation_summary.c_f.toFixed(3)}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Reference area (A_ref)</span>
+                            <span class="value">${results.calculation_summary.A_ref.toFixed(2)} m²</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function generateProjectingDetails(results) {
+            return `
+                <div class="collapsible active">
+                    <div class="collapsible-header">
+                        <h4>🔩 Anchor Verification</h4>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="detail-row">
+                            <span class="label">Tension utilization</span>
+                            <span class="value">${(results.anchor_check.eta_tension * 100).toFixed(1)}%</span>
+                        </div>
+                        ${generateUtilizationBar(results.anchor_check.eta_tension)}
+                        
+                        <div class="detail-row" style="margin-top: 10px;">
+                            <span class="label">Shear utilization</span>
+                            <span class="value">${(results.anchor_check.eta_shear * 100).toFixed(1)}%</span>
+                        </div>
+                        ${generateUtilizationBar(results.anchor_check.eta_shear)}
+                        
+                        <div class="detail-row" style="margin-top: 10px;">
+                            <span class="label">Combined utilization</span>
+                            <span class="value">${(results.anchor_check.eta_combined * 100).toFixed(1)}%</span>
+                        </div>
+                        ${generateUtilizationBar(results.anchor_check.eta_combined)}
+                    </div>
+                </div>
+                
+                <div class="collapsible active">
+                    <div class="collapsible-header">
+                        <h4>🔧 Bracket Member</h4>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="detail-row">
+                            <span class="label">Bending utilization</span>
+                            <span class="value">${(results.bracket_check.eta_bending * 100).toFixed(1)}%</span>
+                        </div>
+                        ${generateUtilizationBar(results.bracket_check.eta_bending)}
+                        
+                        <div class="detail-row" style="margin-top: 10px;">
+                            <span class="label">Shear utilization</span>
+                            <span class="value">${(results.bracket_check.eta_shear * 100).toFixed(1)}%</span>
+                        </div>
+                        ${generateUtilizationBar(results.bracket_check.eta_shear)}
+                    </div>
+                </div>
+                
+                <div class="collapsible">
+                    <div class="collapsible-header">
+                        <h4>📏 Deflection Check</h4>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="detail-row">
+                            <span class="label">Deflection</span>
+                            <span class="value">${results.deflection_check.delta.toFixed(2)} mm</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Limit</span>
+                            <span class="value">${results.deflection_check.delta_limit.toFixed(2)} mm</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Utilization</span>
+                            <span class="value">${(results.deflection_check.eta_deflection * 100).toFixed(1)}%</span>
+                        </div>
+                        ${generateUtilizationBar(results.deflection_check.eta_deflection)}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function generatePostMountedDetails(results) {
+            return `
+                <div class="collapsible active">
+                    <div class="collapsible-header">
+                        <h4>🏗️ Post Verification</h4>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="detail-row">
+                            <span class="label">Bending utilization</span>
+                            <span class="value">${(results.post_check.eta_bending * 100).toFixed(1)}%</span>
+                        </div>
+                        ${generateUtilizationBar(results.post_check.eta_bending)}
+                        
+                        <div class="detail-row" style="margin-top: 10px;">
+                            <span class="label">Shear utilization</span>
+                            <span class="value">${(results.post_check.eta_shear * 100).toFixed(1)}%</span>
+                        </div>
+                        ${generateUtilizationBar(results.post_check.eta_shear)}
+                    </div>
+                </div>
+                
+                <div class="collapsible">
+                    <div class="collapsible-header">
+                        <h4>🏗️ Foundation</h4>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="detail-row">
+                            <span class="label">Status</span>
+                            <span class="value">${results.foundation_check.status}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Assessment</span>
+                            <span class="value">${results.foundation_check.message}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function generateUtilizationBar(utilization) {
+            const percent = utilization * 100;
+            const barClass = percent < 70 ? 'util-low' : percent < 90 ? 'util-medium' : 'util-high';
+            return `
+                <div class="utilization-bar">
+                    <div class="utilization-fill ${barClass}" style="width: ${Math.min(percent, 100)}%">
+                        ${percent.toFixed(0)}%
+                    </div>
+                </div>
+            `;
+        }
+        
+        function generateWarnings(signType) {
+            const warnings = {
+                wall_mounted: [
+                    'This is a preliminary design calculation',
+                    'Final design requires CEng sign-off',
+                    'Substrate condition must be verified on site',
+                    'Orography not considered (conservative approach)'
+                ],
+                projecting: [
+                    'Foundation/wall fixings design by structural engineer required',
+                    'Substrate condition and capacity must be verified on site',
+                    'Fatigue not assessed - regular inspection required (annually recommended)',
+                    'This is a preliminary design - final design requires CEng sign-off'
+                ],
+                post_mounted: [
+                    'Foundation design by structural engineer required',
+                    'Soil investigation and bearing capacity verification required',
+                    'For posts > 6m, consider dynamic wind effects (vortex shedding)',
+                    'Fatigue not assessed - regular inspection required (annually recommended)',
+                    'This is a preliminary design - final design requires CEng sign-off'
+                ]
+            };
+            
+            return `
+                <div class="warning-box">
+                    <h4>⚠️ Important Notices</h4>
+                    <ul>
+                        ${warnings[signType].map(w => `<li>${w}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+        
+        // Auto-calculate on page load
+        window.addEventListener('load', () => {
+            calculate();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signage Wind Loading Calculator | North By North East</title>
+    <style>
+        /* Clean, professional styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        
+        .label-hint {
+            font-weight: 400;
+            color: #7f8c8d;
+            font-size: 0.85em;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .input-with-unit {
+            position: relative;
+            flex: 1;
+        }
+        
+        .unit {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #7f8c8d;
+            font-size: 0.9em;
+            pointer-events: none;
+        }
+        
+        .input-with-unit input {
+            padding-right: 35px;
+        }
+        
+        .input-with-unit small {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.8em;
+            color: #7f8c8d;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #2c3e50;
+        }
+        
+        .results {
+            margin-top: 40px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .results.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .results h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .assessment-box {
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            border: 3px solid;
+        }
+        
+        .assessment-box.pass {
+            background: #e8f5e9;
+            border-color: #4caf50;
+        }
+        
+        .assessment-box.caution {
+            background: #fff3e0;
+            border-color: #ff9800;
+        }
+        
+        .assessment-box.fail {
+            background: #ffebee;
+            border-color: #f44336;
+        }
+        
+        .assessment-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .assessment-icon {
+            font-size: 3em;
+        }
+        
+        .assessment-title {
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+        
+        .assessment-summary {
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .check-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+        
+        .check-item.pass {
+            border-color: #4caf50;
+        }
+        
+        .check-item.caution {
+            border-color: #ff9800;
+        }
+        
+        .check-item.fail {
+            border-color: #f44336;
+        }
+        
+        .check-item.info {
+            border-color: #2196f3;
+        }
+        
+        .check-icon {
+            font-size: 1.5em;
+            min-width: 30px;
+        }
+        
+        .check-content {
+            flex: 1;
+        }
+        
+        .check-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .check-value {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .check-message {
+            margin-top: 5px;
+            font-size: 0.95em;
+        }
+        
+        .recommendations {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+        }
+        
+        .recommendations h4 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .recommendations ul {
+            margin-left: 20px;
+        }
+        
+        .recommendations li {
+            margin: 8px 0;
+            line-height: 1.5;
+        }
+        
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .result-label {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        .result-value {
+            color: #667eea;
+            font-weight: 700;
+            font-size: 1.1em;
+        }
+        
+        .calculation-details {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .calculation-details h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        
+        .detail-item {
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 3px;
+        }
+        
+        .detail-label {
+            font-size: 0.85em;
+            color: #7f8c8d;
+        }
+        
+        .detail-value {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-top: 3px;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .warning-title {
+            color: #856404;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .warning-text {
+            color: #856404;
+            font-size: 0.9em;
+        }
+        
+        .warning-list {
+            margin: 10px 0 0 20px;
+            color: #856404;
+            font-size: 0.9em;
+        }
+        
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .info-text {
+            color: #1565c0;
+            font-size: 0.9em;
+        }
+        
+        .credentials {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+            color: #7f8c8d;
+            font-size: 0.85em;
+        }
+        
+        .error {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .error.show {
+            display: block;
+        }
+        
+        .error-text {
+            color: #c62828;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+            
+            form, .button-group, .warning, .info-box {
+                display: none;
+            }
+            
+            .results {
+                display: block !important;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 1.5em;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Signage Wind Loading Calculator</h1>
+            <p>BS EN 1991-1-4:2005+A1:2010 Compliant Calculations</p>
+        </div>
+        
+        <form id="windCalcForm">
+            <!-- Sign Type -->
+            <div class="form-group">
+                <label>Sign Type</label>
+                <select id="signType" required>
+                    <option value="">Select sign type...</option>
+                    <option value="wall_mounted_fascia">Wall-Mounted Fascia</option>
+                    <option value="projecting_sign" disabled>Projecting Sign (Coming Soon)</option>
+                    <option value="post_mounted" disabled>Post-Mounted Sign (Coming Soon)</option>
+                </select>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-text">
+                    <strong>Note:</strong> This initial version supports wall-mounted fascia signs only. 
+                    Additional sign types will be added in future updates.
+                </div>
+            </div>
+            
+            <!-- Sign Dimensions -->
+            <div class="form-group">
+                <label>Sign Dimensions</label>
+                <div class="input-group">
+                    <div class="input-with-unit">
+                        <input type="number" id="signWidth" step="0.1" min="0.1" max="20" required>
+                        <span class="unit">m</span>
+                        <small>Width (horizontal)</small>
+                    </div>
+                    <div class="input-with-unit">
+                        <input type="number" id="signHeight" step="0.1" min="0.1" max="10" required>
+                        <span class="unit">m</span>
+                        <small>Height (vertical)</small>
+                    </div>
+                    <div class="input-with-unit">
+                        <input type="number" id="signDepth" step="0.1" min="0.1" max="3" value="0.3" required>
+                        <span class="unit">m</span>
+                        <small>Depth (projection)</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Building/Mounting Height -->
+            <div class="form-group">
+                <label>Height to Top of Sign <span class="label-hint">(above ground level)</span></label>
+                <div class="input-with-unit">
+                    <input type="number" id="buildingHeight" step="0.1" min="2" max="100" required>
+                    <span class="unit">m</span>
+                </div>
+            </div>
+            
+            <!-- Location Details -->
+            <div class="form-group">
+                <label>Site Postcode <span class="label-hint">(for wind map lookup)</span></label>
+                <input type="text" id="postcode" placeholder="e.g. NE66 2NT" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Site Altitude <span class="label-hint">(metres above sea level)</span></label>
+                <div class="input-with-unit">
+                    <input type="number" id="altitude" step="1" min="0" max="1000" value="0" required>
+                    <span class="unit">m</span>
+                </div>
+                <small class="label-hint">Use Google Maps or OS maps to determine altitude</small>
+            </div>
+            
+            <!-- Environmental Factors -->
+            <div class="form-group">
+                <label>Distance to Nearest Shoreline <span class="label-hint">(approximately)</span></label>
+                <select id="distanceToShoreline" required>
+                    <option value="">Select distance...</option>
+                    <option value="0">0 km (At shoreline)</option>
+                    <option value="1">< 1 km</option>
+                    <option value="5">1-5 km</option>
+                    <option value="10">5-10 km</option>
+                    <option value="25">10-25 km</option>
+                    <option value="50">25-50 km</option>
+                    <option value="75">50-75 km</option>
+                    <option value="100">75-100 km</option>
+                    <option value="100+">100+ km</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Terrain Type</label>
+                <select id="terrainType" required>
+                    <option value="">Select terrain...</option>
+                    <option value="sea">Sea/Open Water</option>
+                    <option value="country">Country (Rural/Suburban)</option>
+                    <option value="town">Town/City Center</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="townDistanceGroup" style="display: none;">
+                <label>Distance from Edge of Town <span class="label-hint">(if in town)</span></label>
+                <select id="distanceIntoTown">
+                    <option value="0">Not applicable</option>
+                    <option value="0.5">< 1 km</option>
+                    <option value="1.5">1-2 km</option>
+                    <option value="3">2-4 km</option>
+                    <option value="6">4-8 km</option>
+                    <option value="10">8+ km</option>
+                </select>
+            </div>
+            
+            <div class="warning">
+                <div class="warning-title">⚠ Important Limitations</div>
+                <div class="warning-text">
+                    This calculator provides indicative wind loading calculations only. 
+                    It does NOT account for:
+                    <ul class="warning-list">
+                        <li>Orographic effects (hills, cliffs, escarpments)</li>
+                        <li>Complex building geometries</li>
+                        <li>Local sheltering or exposure effects</li>
+                    </ul>
+                    For a full certified structural calculation suitable for building control submission, 
+                    please contact us directly.
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button type="button" class="btn-secondary" onclick="resetForm()">Reset</button>
+                <button type="submit" class="btn-primary">Calculate Wind Loading</button>
+            </div>
+        </form>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Calculating wind loading...</p>
+        </div>
+        
+        <div class="error" id="error">
+            <div class="error-text" id="errorText"></div>
+        </div>
+        
+        <div class="results" id="results">
+            <h2>Calculation Results</h2>
+            
+            <!-- Assessment Section -->
+            <div id="assessmentBox" class="assessment-box" style="display: none;">
+                <div class="assessment-header">
+                    <div class="assessment-icon" id="assessmentIcon"></div>
+                    <div>
+                        <div class="assessment-title" id="assessmentTitle"></div>
+                    </div>
+                </div>
+                <div class="assessment-summary" id="assessmentSummary"></div>
+                <div id="assessmentChecks"></div>
+                <div class="recommendations" id="assessmentRecommendations" style="display: none;">
+                    <h4>📋 Recommendations:</h4>
+                    <ul id="recommendationsList"></ul>
+                </div>
+            </div>
+            
+            <h3 style="margin-top: 30px; color: #2c3e50;">Wind Loading Values</h3>
+            
+            <div class="result-item">
+                <span class="result-label">Design Wind Speed</span>
+                <span class="result-value" id="resWindSpeed">-</span>
+            </div>
+            
+            <div class="result-item">
+                <span class="result-label">Peak Velocity Pressure</span>
+                <span class="result-value" id="resPeakPressure">-</span>
+            </div>
+            
+            <div class="result-item">
+                <span class="result-label">Design Wind Force</span>
+                <span class="result-value" id="resWindForce">-</span>
+            </div>
+            
+            <div class="result-item">
+                <span class="result-label">Overturning Moment</span>
+                <span class="result-value" id="resMoment">-</span>
+            </div>
+            
+            <div class="calculation-details">
+                <h3>Calculation Factors (BS EN 1991-1-4)</h3>
+                <div class="detail-grid" id="detailGrid">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+            
+            <div id="warningsBox" style="display: none;" class="warning">
+                <div class="warning-title">⚠ Calculation Warnings</div>
+                <ul class="warning-list" id="warningsList"></ul>
+            </div>
+            
+            <div class="info-box" style="margin-top: 20px;">
+                <div class="info-text">
+                    <strong>Next Steps:</strong>
+                    <ul style="margin: 10px 0 0 20px;">
+                        <li>These are characteristic (unfactored) values</li>
+                        <li>For building control submission, apply partial factors per EN 1990</li>
+                        <li>Foundation design and fixings must be verified by structural engineer</li>
+                    </ul>
+                    <br>
+                    <strong>Need a Full Structural Calculation?</strong><br>
+                    Contact us for BS EN 1991-1-4 compliant certification (£350, 48hr turnaround):<br>
+                    <a href="mailto:sales@nbnesigns.co.uk">sales@nbnesigns.co.uk</a> | 
+                    <a href="tel:+441665606741">01665 606 741</a>
+                </div>
+            </div>
+            
+            <button class="btn-primary" style="width: 100%; margin-top: 20px;" onclick="window.print()">
+                Print Results
+            </button>
+        </div>
+        
+        <div class="credentials">
+            <p><strong>Calculation Methodology:</strong> BS EN 1991-1-4:2005+A1:2010</p>
+            <p><strong>Reference:</strong> SCI Publication P394 "Wind Actions to BS EN 1991-1-4"</p>
+            <p><strong>Developed by:</strong> Toby Fletcher, CEng MIMechE</p>
+            <p style="margin-top: 10px; font-size: 0.8em;">
+                © 2024 North By North East Print & Sign Ltd. All rights reserved.
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        // Form interaction handlers
+        document.getElementById('terrainType').addEventListener('change', function() {
+            const townGroup = document.getElementById('townDistanceGroup');
+            if (this.value === 'town') {
+                townGroup.style.display = 'block';
+            } else {
+                townGroup.style.display = 'none';
+                document.getElementById('distanceIntoTown').value = '0';
+            }
+        });
+        
+        document.getElementById('windCalcForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Hide previous results/errors
+            document.getElementById('results').classList.remove('show');
+            document.getElementById('error').classList.remove('show');
+            
+            // Show loading
+            document.getElementById('loading').classList.add('show');
+            
+            // Collect form data
+            const formData = {
+                sign_width: parseFloat(document.getElementById('signWidth').value),
+                sign_height: parseFloat(document.getElementById('signHeight').value),
+                sign_depth: parseFloat(document.getElementById('signDepth').value),
+                building_height: parseFloat(document.getElementById('buildingHeight').value),
+                postcode: document.getElementById('postcode').value,
+                altitude: parseFloat(document.getElementById('altitude').value),
+                distance_to_shore: document.getElementById('distanceToShoreline').value,
+                terrain_type: document.getElementById('terrainType').value,
+                distance_into_town: parseFloat(document.getElementById('distanceIntoTown').value),
+                sign_type: document.getElementById('signType').value
+            };
+            
+            try {
+                // Call backend API
+                const response = await fetch('/api/calculate-wind-loading', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Calculation failed');
+                }
+                
+                const results = await response.json();
+                
+                // Hide loading
+                document.getElementById('loading').classList.remove('show');
+                
+                // Display results
+                displayResults(results);
+                
+            } catch (error) {
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('errorText').textContent = 
+                    'Calculation error: ' + error.message + '. Please check your inputs and try again.';
+                document.getElementById('error').classList.add('show');
+            }
+        });
+        
+        function displayResults(results) {
+            // Display assessment first
+            if (results.assessment) {
+                displayAssessment(results.assessment);
+            }
+            
+            // Update result values
+            document.getElementById('resWindSpeed').textContent = 
+                results.design_wind_speed.toFixed(1) + ' m/s';
+            document.getElementById('resPeakPressure').textContent = 
+                results.peak_pressure.toFixed(0) + ' Pa';
+            document.getElementById('resWindForce').textContent = 
+                results.wind_force.toFixed(1) + ' kN';
+            document.getElementById('resMoment').textContent = 
+                results.overturning_moment.toFixed(1) + ' kNm';
+            
+            // Display calculation details
+            const detailGrid = document.getElementById('detailGrid');
+            detailGrid.innerHTML = '';
+            
+            const details = [
+                { label: 'v_map', value: results.calculation_summary.v_map + ' m/s', desc: 'Fundamental wind speed' },
+                { label: 'c_alt', value: results.calculation_summary.c_alt.toFixed(3), desc: 'Altitude factor' },
+                { label: 'c_dir', value: results.calculation_summary.c_dir.toFixed(2), desc: 'Directional factor' },
+                { label: 'c_e', value: results.calculation_summary.c_e.toFixed(3), desc: 'Exposure factor' },
+                { label: 'c_e,T', value: results.calculation_summary.c_e_T.toFixed(3), desc: 'Town correction' },
+                { label: 'c_s', value: results.calculation_summary.c_s.toFixed(3), desc: 'Size factor' },
+                { label: 'c_d', value: results.calculation_summary.c_d.toFixed(3), desc: 'Dynamic factor' },
+                { label: 'c_f', value: results.calculation_summary.c_f.toFixed(3), desc: 'Force coefficient' },
+                { label: 'Zone', value: results.calculation_summary.zone, desc: 'Terrain zone' },
+                { label: 'A_ref', value: results.calculation_summary.A_ref.toFixed(2) + ' m²', desc: 'Reference area' }
+            ];
+            
+            details.forEach(detail => {
+                const item = document.createElement('div');
+                item.className = 'detail-item';
+                item.innerHTML = `
+                    <div class="detail-label">${detail.desc} (${detail.label})</div>
+                    <div class="detail-value">${detail.value}</div>
+                `;
+                detailGrid.appendChild(item);
+            });
+            
+            // Display warnings if any
+            if (results.warnings && results.warnings.length > 0) {
+                const warningsBox = document.getElementById('warningsBox');
+                const warningsList = document.getElementById('warningsList');
+                warningsList.innerHTML = '';
+                
+                results.warnings.forEach(warning => {
+                    const li = document.createElement('li');
+                    li.textContent = warning;
+                    warningsList.appendChild(li);
+                });
+                
+                warningsBox.style.display = 'block';
+            } else {
+                document.getElementById('warningsBox').style.display = 'none';
+            }
+            
+            // Show results
+            document.getElementById('results').classList.add('show');
+            
+            // Scroll to results
+            document.getElementById('results').scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+        
+        function displayAssessment(assessment) {
+            const assessmentBox = document.getElementById('assessmentBox');
+            const assessmentIcon = document.getElementById('assessmentIcon');
+            const assessmentTitle = document.getElementById('assessmentTitle');
+            const assessmentSummary = document.getElementById('assessmentSummary');
+            const assessmentChecks = document.getElementById('assessmentChecks');
+            const assessmentRecommendations = document.getElementById('assessmentRecommendations');
+            const recommendationsList = document.getElementById('recommendationsList');
+            
+            // Set status-specific styling
+            const status = assessment.overall_status.toLowerCase();
+            assessmentBox.className = 'assessment-box ' + status;
+            
+            // Set icon and title based on status
+            if (status === 'pass') {
+                assessmentIcon.textContent = '✅';
+                assessmentTitle.textContent = 'PASS - Suitable for Standard Construction';
+                assessmentTitle.style.color = '#4caf50';
+            } else if (status === 'caution') {
+                assessmentIcon.textContent = '⚠️';
+                assessmentTitle.textContent = 'CAUTION - Enhanced Construction Required';
+                assessmentTitle.style.color = '#ff9800';
+            } else {
+                assessmentIcon.textContent = '❌';
+                assessmentTitle.textContent = 'FAIL - Specialist Engineering Required';
+                assessmentTitle.style.color = '#f44336';
+            }
+            
+            // Set summary
+            assessmentSummary.textContent = assessment.summary;
+            
+            // Display checks
+            assessmentChecks.innerHTML = '';
+            assessment.checks.forEach(check => {
+                const checkDiv = document.createElement('div');
+                checkDiv.className = 'check-item ' + check.status.toLowerCase();
+                
+                let icon = '';
+                if (check.status === 'PASS') icon = '✓';
+                else if (check.status === 'CAUTION') icon = '⚠';
+                else if (check.status === 'FAIL') icon = '✗';
+                else icon = 'ℹ';
+                
+                checkDiv.innerHTML = `
+                    <div class="check-icon">${icon}</div>
+                    <div class="check-content">
+                        <div class="check-name">${check.name}</div>
+                        <div class="check-value">${check.value} ${check.limit !== 'N/A' ? '(Limit: ' + check.limit + ')' : ''}</div>
+                        <div class="check-message">${check.message}</div>
+                    </div>
+                `;
+                assessmentChecks.appendChild(checkDiv);
+            });
+            
+            // Display recommendations
+            if (assessment.recommendations && assessment.recommendations.length > 0) {
+                recommendationsList.innerHTML = '';
+                assessment.recommendations.forEach(rec => {
+                    const li = document.createElement('li');
+                    li.textContent = rec;
+                    recommendationsList.appendChild(li);
+                });
+                assessmentRecommendations.style.display = 'block';
+            } else {
+                assessmentRecommendations.style.display = 'none';
+            }
+            
+            // Show assessment box
+            assessmentBox.style.display = 'block';
+        }
+        
+        function resetForm() {
+            document.getElementById('windCalcForm').reset();
+            document.getElementById('results').classList.remove('show');
+            document.getElementById('error').classList.remove('show');
+            document.getElementById('townDistanceGroup').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

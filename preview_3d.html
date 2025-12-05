@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wind Loading Calculator - 3D Interactive</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <style>
+        /* Print styles */
+        @media print {
+            body { background: white; color: black; }
+            .header, .left-panel, .right-panel, .canvas-container { display: none !important; }
+            .results-panel { 
+                display: block !important; 
+                position: static !important;
+                background: white !important;
+                padding: 20px !important;
+            }
+            .result-card { 
+                border: 1px solid #ccc !important; 
+                background: white !important;
+                color: black !important;
+                page-break-inside: avoid;
+            }
+            .print-header { display: block !important; }
+            .no-print { display: none !important; }
+        }
+        
+        .print-header {
+            display: none;
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #1e3c72;
+        }
+        
+        .print-header h1 {
+            color: #1e3c72;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .print-header .print-info {
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0e27;
+            color: white;
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        /* Main Layout Grid */
+        .app-container {
+            display: grid;
+            grid-template-columns: 320px 1fr 320px;
+            grid-template-rows: 80px 1fr 200px;
+            height: 100vh;
+            gap: 0;
+        }
+        
+        /* Header */
+        .header {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 100;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .header .subtitle {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .disclaimer {
+            background: rgba(255, 193, 7, 0.15);
+            border: 1px solid rgba(255, 193, 7, 0.4);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+        
+        .disclaimer-title {
+            color: #ffc107;
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+        
+        .code-ref {
+            background: rgba(102, 126, 234, 0.15);
+            border-left: 3px solid #667eea;
+            padding: 8px 10px;
+            margin: 8px 0;
+            font-size: 10px;
+            border-radius: 3px;
+        }
+        
+        .code-ref-title {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+        
+        .contact-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: transform 0.2s;
+        }
+        
+        .contact-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .sign-type-tabs {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .tab-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+        
+        .tab-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .tab-btn.active {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+        }
+        
+        /* Left Panel - Inputs */
+        .left-panel {
+            background: rgba(15, 20, 45, 0.95);
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        /* Right Panel - Inputs */
+        .right-panel {
+            background: rgba(15, 20, 45, 0.95);
+            padding: 20px;
+            overflow-y: auto;
+            border-left: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        /* Center - 3D Canvas */
+        .canvas-container {
+            position: relative;
+            background: linear-gradient(180deg, #0a0e27 0%, #1a1e3f 100%);
+        }
+        
+        #canvas3d {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .canvas-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            pointer-events: none;
+        }
+        
+        .canvas-overlay h3 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #667eea;
+        }
+        
+        /* Bottom Panel - Results */
+        .results-panel {
+            grid-column: 1 / -1;
+            background: rgba(15, 20, 45, 0.95);
+            padding: 20px 40px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            overflow-x: auto;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .result-card {
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 8px;
+            padding: 15px 20px;
+            min-width: 180px;
+            text-align: center;
+        }
+        
+        .result-card h4 {
+            font-size: 11px;
+            color: #aaa;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .result-card .value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        .result-card .unit {
+            font-size: 14px;
+            color: #888;
+            margin-left: 4px;
+        }
+        
+        .result-card.status {
+            background: rgba(76, 175, 80, 0.1);
+            border-color: rgba(76, 175, 80, 0.3);
+        }
+        
+        .result-card.status .value {
+            color: #4CAF50;
+            font-size: 18px;
+        }
+        
+        .result-card.status.inadequate {
+            background: rgba(244, 67, 54, 0.1);
+            border-color: rgba(244, 67, 54, 0.3);
+        }
+        
+        .result-card.status.inadequate .value {
+            color: #F44336;
+        }
+        
+        /* Input Styling */
+        .input-section {
+            margin-bottom: 25px;
+        }
+        
+        .section-title {
+            font-size: 14px;
+            color: #667eea;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.3);
+            font-weight: 600;
+        }
+        
+        .input-row {
+            margin-bottom: 12px;
+        }
+        
+        .input-row label {
+            display: block;
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        
+        .input-row input,
+        .input-row select {
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: white;
+            font-size: 13px;
+        }
+        
+        .input-row input:focus,
+        .input-row select:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(255,255,255,0.08);
+        }
+        
+        /* Fix dropdown option visibility */
+        .input-row select option {
+            background: #1a1f3a;
+            color: white;
+            padding: 8px;
+        }
+        
+        .calculate-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+        
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.5);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(102, 126, 234, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <h1>🌬️ Wind Loading Calculator</h1>
+                <div class="subtitle">BS EN 1991-1-4 | Interactive 3D Design Tool</div>
+            </div>
+            <div class="sign-type-tabs">
+                <button class="tab-btn" onclick="selectSignType('wall_mounted')">Wall-Mounted</button>
+                <button class="tab-btn" onclick="selectSignType('projecting')">Projecting</button>
+                <button class="tab-btn active" onclick="selectSignType('post_mounted')">Post-Mounted</button>
+            </div>
+        </div>
+        
+        <!-- Left Panel - Sign & Location Inputs -->
+        <div class="left-panel">
+            <div class="input-section">
+                <div class="disclaimer">
+                    <div class="disclaimer-title">⚠️ Important Notice</div>
+                    This calculator provides <strong>conservative estimates</strong> for preliminary design only. Results are provided <strong>"as is"</strong> without warranty. This tool is <strong>NOT a substitute</strong> for a full engineered design calculation by a qualified structural engineer.
+                </div>
+                
+                <div class="section-title">🌬️ Wind Loading (EN 1991-1-4)</div>
+                <div class="code-ref">
+                    <div class="code-ref-title">BS EN 1991-1-4:2005+A1:2010</div>
+                    Eurocode 1: Actions on structures - Wind actions
+                </div>
+                <div class="input-row">
+                    <label>Width</label>
+                    <input type="number" id="sign-width" value="3.0" step="0.1" oninput="updateScene()">
+                </div>
+                <div class="input-row">
+                    <label>Height</label>
+                    <input type="number" id="sign-height" value="2.0" step="0.1" oninput="updateScene()">
+                </div>
+                <div class="input-row">
+                    <label>Base height above ground</label>
+                    <input type="number" id="base-height" value="2.5" step="0.1" oninput="updateScene()">
+                </div>
+            </div>
+            
+            <div class="input-section">
+                <div class="section-title">📍 Site Location</div>
+                <div class="code-ref">
+                    <div class="code-ref-title">Clause 4.2(2)P - Basic wind velocity</div>
+                    v<sub>b</sub> = c<sub>dir</sub> × c<sub>season</sub> × v<sub>b,0</sub> (Expression 4.1)<br>
+                    <em>10-minute mean wind velocity at 10m above terrain category II</em>
+                </div>
+                <div class="input-row">
+                    <label>UK Postcode (optional)</label>
+                    <input type="text" id="postcode" placeholder="e.g. SW1A 1AA" oninput="lookupPostcode()" style="text-transform: uppercase;">
+                </div>
+                <div class="input-row">
+                    <label>Site altitude (m)</label>
+                    <input type="number" id="altitude" value="50" step="10" oninput="calculate()">
+                </div>
+                <div class="input-row">
+                    <label>Wind speed v_map (m/s)</label>
+                    <input type="number" id="vmap" value="22.5" step="0.5" oninput="calculate()">
+                    <div style="font-size: 10px; color: #888; margin-top: 3px;">Auto-filled from postcode</div>
+                </div>
+                <div class="input-row">
+                    <label>Distance to shore (km)</label>
+                    <input type="number" id="shore" value="20" step="5" oninput="calculate()">
+                </div>
+                <div class="input-row">
+                    <label>Terrain type</label>
+                    <select id="terrain" onchange="calculate()">
+                        <option value="sea">Sea/Coastal</option>
+                        <option value="country" selected>Country/Farmland</option>
+                        <option value="town">Town/City</option>
+                    </select>
+                </div>
+                <div class="code-ref">
+                    <div class="code-ref-title">Clause 4.5(1) - Peak velocity pressure</div>
+                    q<sub>p</sub>(z) = [1 + 7 × I<sub>v</sub>(z)] × ½ × ρ × v<sub>m</sub>²(z) (Expression 4.8)<br>
+                    <em>Includes mean and short-term velocity fluctuations</em>
+                </div>
+                <div class="code-ref">
+                    <div class="code-ref-title">Clause 4.5 Note 2 - Air density</div>
+                    ρ = 1.25 kg/m³ (recommended value)
+                </div>
+            </div>
+            
+            <div class="input-section">
+                <div class="section-title">🏗️ Sign Panel Construction</div>
+                <div class="code-ref">
+                    <div class="code-ref-title">Clause 7.4.3(1) - Signboards</div>
+                    c<sub>f</sub> = 1.80 (Expression 7.7)<br>
+                    <em>For signboards separated from ground by z<sub>g</sub> > h/4</em>
+                </div>
+                <div class="code-ref">
+                    <div class="code-ref-title">Clause 7.4.3(2) - Eccentricity</div>
+                    e = ± 0.25b (horizontal eccentricity of resultant force)
+                </div>
+                <div class="input-row">
+                    <label>Panel material</label>
+                    <select id="panel-material" onchange="calculate()">
+                        <option value="acm_3mm" selected>3mm ACM (Dibond)</option>
+                        <option value="aluminium_3mm">3mm Aluminium</option>
+                        <option value="steel_composite_3mm">3mm Steel Composite</option>
+                        <option value="aluminium_4mm">4mm Aluminium</option>
+                    </select>
+                </div>
+                <div class="input-row">
+                    <label>Rib/Channel spacing (mm)*</label>
+                    <input type="number" id="channel-spacing" value="400" step="50" oninput="updateScene(); calculate()">
+                </div>
+                <div style="font-size: 9px; color: #aaa; margin-top: -8px; line-height: 1.3;">
+                    *Assumed to be medium sign channel/rib profile (typical depth 50-75mm). Ribs provide stiffening to prevent panel deflection under wind load. Maximum recommended spacing: 400-600mm depending on panel material and wind pressure.
+                </div>
+            </div>
+            
+            <button class="contact-btn" onclick="openContactForm()">📧 Request Engineered Design Calculation</button>
+            
+            <div style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 6px; font-size: 10px; line-height: 1.6;">
+                <strong>Need a certified calculation?</strong><br>
+                Our qualified structural engineers can provide:
+                <ul style="margin: 8px 0 0 20px; padding: 0;">
+                    <li>Full design calculations to Eurocodes</li>
+                    <li>Stamped and signed drawings</li>
+                    <li>Building control submissions</li>
+                    <li>Site-specific wind assessments</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Center - 3D Canvas -->
+        <div class="canvas-container">
+            <canvas id="canvas3d"></canvas>
+            <div class="canvas-overlay">
+                <h3>🖱️ Interactive Controls</h3>
+                <div>• Left drag: Rotate view</div>
+                <div>• Right drag: Pan</div>
+                <div>• Scroll: Zoom</div>
+            </div>
+        </div>
+        
+        <!-- Right Panel - Post Configuration -->
+        <div class="right-panel">
+            <div class="input-section">
+                <div class="section-title">🏗️ Structural Design</div>
+                <div class="code-ref">
+                    <div class="code-ref-title">BS EN 1993-1-1:2005 - Steel structures</div>
+                    Design resistance: M<sub>Ed</sub> ≤ M<sub>c,Rd</sub><br>
+                    <em>Clause 6.2.5 - Bending moment resistance</em>
+                </div>
+                <div class="code-ref">
+                    <div class="code-ref-title">Clause 5.3(1) - Wind force on structures</div>
+                    F<sub>w</sub> = c<sub>s</sub>c<sub>d</sub> × c<sub>f</sub> × q<sub>p</sub>(z<sub>e</sub>) × A<sub>ref</sub> (Expression 5.3)
+                </div>
+                <div class="section-title" style="margin-top: 15px;">📐 Post Configuration</div>
+                <div class="input-row">
+                    <label>Number of posts</label>
+                    <select id="num-posts" onchange="updateScene(); calculate()">
+                        <option value="1">1 Post (Center)</option>
+                        <option value="2" selected>2 Posts (Standard)</option>
+                        <option value="3">3 Posts</option>
+                        <option value="4">4 Posts</option>
+                    </select>
+                </div>
+                <div class="input-row">
+                    <label>Total post height (m)</label>
+                    <input type="number" id="post-height" value="4.5" step="0.5" oninput="updateScene()">
+                </div>
+                <div class="input-row">
+                    <label>Foundation embedment (m)</label>
+                    <input type="number" id="embedment" value="1.5" step="0.1" oninput="updateScene()">
+                </div>
+                <div class="input-row">
+                    <label>Section type</label>
+                    <select id="section-type" onchange="updateScene(); calculate()">
+                        <option value="circular">Circular (CHS)</option>
+                        <option value="square" selected>Square (SHS)</option>
+                    </select>
+                </div>
+                <div class="input-row">
+                    <label>Post diameter/width (mm)</label>
+                    <input type="number" id="post-diameter" value="150" step="10" oninput="updateScene(); calculate()">
+                </div>
+                <div class="input-row">
+                    <label>Wall thickness (mm)</label>
+                    <input type="number" id="wall-thickness" value="3" step="0.5" oninput="calculate()">
+                </div>
+            </div>
+            
+            <div class="input-section">
+                <div class="section-title">🔩 Post Material</div>
+                <div class="code-ref">
+                    <div class="code-ref-title">Material partial factors</div>
+                    γ<sub>M0</sub> = 1.0 (steel - EN 1993-1-1)<br>
+                    γ<sub>M1</sub> = 1.1 (aluminium - EN 1999-1-1)<br>
+                    γ<sub>M</sub> = 1.3 (timber - EN 1995-1-1)
+                </div>
+                <div class="input-row">
+                    <label>Material</label>
+                    <select id="post-material" onchange="updateMaterialGrades(); updateScene(); calculate()">
+                        <option value="steel" selected>Steel</option>
+                        <option value="aluminium">Aluminium</option>
+                        <option value="timber">Timber</option>
+                    </select>
+                </div>
+                <div class="input-row">
+                    <label id="grade-label">Steel grade</label>
+                    <select id="material-grade" onchange="calculate()">
+                        <option value="235">S235 (f_y = 235 N/mm²)</option>
+                        <option value="275" selected>S275 (f_y = 275 N/mm²)</option>
+                        <option value="355">S355 (f_y = 355 N/mm²)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button class="calculate-btn" onclick="calculate()">🔄 Calculate Wind Loading</button>
+            
+            <div style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 6px; font-size: 10px; text-align: center; line-height: 1.5;">
+                <strong>Conservative Design Approach</strong><br>
+                All calculations use conservative assumptions and safety factors per Eurocodes. For critical applications, always consult a qualified engineer.
+            </div>
+        </div>
+        
+        <!-- Bottom Panel - Live Results -->
+        <div class="results-panel" id="results-panel">
+            <!-- Print header (only visible when printing) -->
+            <div class="print-header">
+                <h1>🌬️ Wind Loading Calculator - Calculation Report</h1>
+                <div class="print-info">
+                    <strong>NBNE Signs Ltd</strong> | sales@nbnesigns.com<br>
+                    Preliminary Design Calculation per BS EN 1991-1-4:2005+A1:2010<br>
+                    Date: <span id="print-date"></span>
+                </div>
+                <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; font-size: 11px;">
+                    <strong>⚠️ IMPORTANT:</strong> This is a preliminary calculation for estimating purposes only. 
+                    This document does NOT constitute a certified structural design and should NOT be used for construction without verification by a qualified structural engineer.
+                </div>
+                
+                <!-- Print: Input Summary -->
+                <div style="display: none;" class="print-header">
+                    <h3 style="color: #1e3c72; margin: 20px 0 10px 0; font-size: 16px;">Input Parameters</h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px;">
+                        <tr style="background: #f5f5f5;">
+                            <td style="padding: 8px; border: 1px solid #ddd; font-weight: 600;">Sign Dimensions</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;" id="print-sign-dims"></td>
+                            <td style="padding: 8px; border: 1px solid #ddd; font-weight: 600;">Post Configuration</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;" id="print-post-config"></td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; font-weight: 600;">Location</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;" id="print-location"></td>
+                            <td style="padding: 8px; border: 1px solid #ddd; font-weight: 600;">Material</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;" id="print-material"></td>
+                        </tr>
+                    </table>
+                    <h3 style="color: #1e3c72; margin: 20px 0 10px 0; font-size: 16px;">Calculation Results</h3>
+                </div>
+            </div>
+            <div class="result-card">
+                <h4>Peak Pressure</h4>
+                <div class="value" id="result-pressure">---<span class="unit">Pa</span></div>
+            </div>
+            <div class="result-card">
+                <h4>Wind Force</h4>
+                <div class="value" id="result-force">---<span class="unit">kN</span></div>
+            </div>
+            <div class="result-card">
+                <h4>Moment</h4>
+                <div class="value" id="result-moment">---<span class="unit">kNm</span></div>
+            </div>
+            <div class="result-card">
+                <h4>Post Utilization</h4>
+                <div class="value" id="result-util">---<span class="unit">%</span></div>
+            </div>
+            <div class="result-card">
+                <h4>Channels Required</h4>
+                <div class="value" id="result-channels">---</div>
+            </div>
+            <div class="result-card status" id="result-status-card">
+                <h4>Overall Status</h4>
+                <div class="value" id="result-status">READY</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let scene, camera, renderer, controls;
+        let signMesh, postMesh, groundMesh, windArrow;
+        let currentSignType = 'post_mounted';
+        
+        // Material properties (same as before)
+        const MATERIALS = {
+            'acm_3mm': { name: '3mm ACM', I_per_width: 94.5, W_per_width: 63.0, E: 70000, f_y: 100 },
+            'aluminium_3mm': { name: '3mm Aluminium', I_per_width: 2.25, W_per_width: 1.5, E: 70000, f_y: 100 },
+            'steel_composite_3mm': { name: '3mm Steel Composite', I_per_width: 472.5, W_per_width: 315.0, E: 210000, f_y: 235 },
+            'aluminium_4mm': { name: '4mm Aluminium', I_per_width: 5.33, W_per_width: 2.67, E: 70000, f_y: 100 }
+        };
+        
+        // Initialize Three.js scene
+        function initScene() {
+            // Check if Three.js loaded
+            if (typeof THREE === 'undefined') {
+                console.error('Three.js failed to load');
+                document.getElementById('canvas3d').parentElement.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; flex-direction: column; padding: 40px; text-align: center;">
+                        <h2 style="color: #667eea; margin-bottom: 20px;">⚠️ 3D View Unavailable</h2>
+                        <p style="color: #aaa; margin-bottom: 10px;">Three.js library failed to load.</p>
+                        <p style="color: #888; font-size: 12px;">Check your internet connection or use the standard preview.html instead.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const container = document.getElementById('canvas3d');
+            
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0e27);
+            scene.fog = new THREE.Fog(0x0a0e27, 10, 50);
+            
+            // Camera
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(15, 8, 15);
+            camera.lookAt(0, 3, 0);
+            
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ canvas: container, antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.shadowMap.enabled = true;
+            
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 20, 10);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+            
+            // Grid
+            const gridHelper = new THREE.GridHelper(20, 20, 0x667eea, 0x333366);
+            scene.add(gridHelper);
+            
+            // Ground plane
+            const groundGeometry = new THREE.PlaneGeometry(20, 20);
+            const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x1a1e3f, side: THREE.DoubleSide });
+            groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+            groundMesh.rotation.x = -Math.PI / 2;
+            groundMesh.receiveShadow = true;
+            scene.add(groundMesh);
+            
+            // Mouse controls (simplified orbit)
+            setupControls();
+            
+            // Initial scene
+            updateScene();
+            animate();
+        }
+        
+        function setupControls() {
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            let rotation = { x: 0, y: 0 };
+            
+            const canvas = document.getElementById('canvas3d');
+            
+            canvas.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            
+            canvas.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    const deltaX = e.clientX - previousMousePosition.x;
+                    const deltaY = e.clientY - previousMousePosition.y;
+                    
+                    rotation.y += deltaX * 0.005;
+                    rotation.x += deltaY * 0.005;
+                    
+                    // Update camera position
+                    const radius = 20;
+                    camera.position.x = radius * Math.sin(rotation.y) * Math.cos(rotation.x);
+                    camera.position.y = radius * Math.sin(rotation.x) + 5;
+                    camera.position.z = radius * Math.cos(rotation.y) * Math.cos(rotation.x);
+                    camera.lookAt(0, 3, 0);
+                    
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                }
+            });
+            
+            canvas.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+            
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomSpeed = 0.1;
+                const direction = e.deltaY > 0 ? 1 : -1;
+                camera.position.multiplyScalar(1 + direction * zoomSpeed);
+            });
+        }
+        
+        function updateScene() {
+            // Clear existing meshes
+            if (signMesh) scene.remove(signMesh);
+            if (postMesh) {
+                // Remove all posts (could be a group)
+                scene.remove(postMesh);
+            }
+            if (windArrow) scene.remove(windArrow);
+            
+            // Remove all channel lines (they have a specific material color)
+            const objectsToRemove = [];
+            scene.traverse((object) => {
+                if (object instanceof THREE.Line) {
+                    objectsToRemove.push(object);
+                }
+            });
+            objectsToRemove.forEach(obj => scene.remove(obj));
+            
+            // Get dimensions
+            const signWidth = parseFloat(document.getElementById('sign-width').value);
+            const signHeight = parseFloat(document.getElementById('sign-height').value);
+            const baseHeight = parseFloat(document.getElementById('base-height').value);
+            const postHeight = parseFloat(document.getElementById('post-height').value);
+            const embedment = parseFloat(document.getElementById('embedment').value);
+            const postDiameter = parseFloat(document.getElementById('post-diameter').value) / 1000; // mm to m
+            const sectionType = document.getElementById('section-type').value;
+            const material = document.getElementById('post-material').value;
+            const numPosts = parseInt(document.getElementById('num-posts').value);
+            const channelSpacing = parseFloat(document.getElementById('channel-spacing').value);
+            
+            // Material colors
+            const materialColors = {
+                'steel': 0x708090,
+                'aluminium': 0xC0C0C0,
+                'timber': 0x8B4513
+            };
+            
+            // Create post geometry (above ground)
+            let aboveGroundGeometry;
+            if (sectionType === 'circular') {
+                aboveGroundGeometry = new THREE.CylinderGeometry(postDiameter/2, postDiameter/2, postHeight, 32);
+            } else {
+                aboveGroundGeometry = new THREE.BoxGeometry(postDiameter, postHeight, postDiameter);
+            }
+            
+            // Create foundation geometry (below ground)
+            let foundationGeometry;
+            if (sectionType === 'circular') {
+                foundationGeometry = new THREE.CylinderGeometry(postDiameter/2, postDiameter/2, embedment, 32);
+            } else {
+                foundationGeometry = new THREE.BoxGeometry(postDiameter, embedment, postDiameter);
+            }
+            
+            const postMaterial = new THREE.MeshStandardMaterial({ 
+                color: materialColors[material],
+                metalness: material !== 'timber' ? 0.7 : 0.2,
+                roughness: material !== 'timber' ? 0.3 : 0.8
+            });
+            
+            const foundationMaterial = new THREE.MeshStandardMaterial({ 
+                color: materialColors[material],
+                metalness: material !== 'timber' ? 0.7 : 0.2,
+                roughness: material !== 'timber' ? 0.3 : 0.8,
+                opacity: 0.6,
+                transparent: true
+            });
+            
+            // Create post group
+            const postGroup = new THREE.Group();
+            
+            // Calculate post positions based on number of posts
+            let postPositions = [];
+            if (numPosts === 1) {
+                postPositions = [0]; // Center
+            } else if (numPosts === 2) {
+                postPositions = [-signWidth/2, signWidth/2]; // Left and right edges
+            } else if (numPosts === 3) {
+                postPositions = [-signWidth/2, 0, signWidth/2]; // Left, center, right
+            } else if (numPosts === 4) {
+                const spacing = signWidth / 3;
+                postPositions = [-signWidth/2, -spacing/2, spacing/2, signWidth/2];
+            }
+            
+            // Create posts at calculated positions
+            postPositions.forEach((xPos, index) => {
+                // Above ground post
+                const post = new THREE.Mesh(aboveGroundGeometry.clone(), postMaterial);
+                post.position.set(xPos, postHeight / 2, 0);
+                post.castShadow = true;
+                postGroup.add(post);
+                
+                // Below ground foundation (semi-transparent)
+                const foundation = new THREE.Mesh(foundationGeometry.clone(), foundationMaterial);
+                foundation.position.set(xPos, -embedment / 2, 0);
+                foundation.castShadow = true;
+                postGroup.add(foundation);
+            });
+            
+            // Add horizontal support beams connecting the posts (only if 2+ posts)
+            if (numPosts >= 2) {
+                const beamDiameter = postDiameter * 0.6; // Slightly smaller than posts
+                const beamGeometry = new THREE.CylinderGeometry(beamDiameter/2, beamDiameter/2, signWidth, 16);
+                const beamMaterial = new THREE.MeshStandardMaterial({ 
+                    color: materialColors[material],
+                    metalness: material !== 'timber' ? 0.7 : 0.2,
+                    roughness: material !== 'timber' ? 0.3 : 0.8
+                });
+                
+                // Top beam (at sign height)
+                const topBeam = new THREE.Mesh(beamGeometry, beamMaterial);
+                topBeam.rotation.z = Math.PI / 2; // Rotate to horizontal
+                topBeam.position.set(0, postHeight + baseHeight + signHeight, 0);
+                topBeam.castShadow = true;
+                postGroup.add(topBeam);
+                
+                // Bottom beam (at sign base)
+                const bottomBeam = new THREE.Mesh(beamGeometry.clone(), beamMaterial);
+                bottomBeam.rotation.z = Math.PI / 2;
+                bottomBeam.position.set(0, postHeight + baseHeight, 0);
+                bottomBeam.castShadow = true;
+                postGroup.add(bottomBeam);
+            }
+            
+            postMesh = postGroup;
+            scene.add(postMesh);
+            
+            // Create sign panel (white face)
+            const signGeometry = new THREE.BoxGeometry(signWidth, signHeight, 0.05);
+            const signMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xFFFFFF, // White
+                metalness: 0.1,
+                roughness: 0.6
+            });
+            signMesh = new THREE.Mesh(signGeometry, signMaterial);
+            signMesh.position.y = postHeight + baseHeight + signHeight / 2;
+            signMesh.castShadow = true;
+            scene.add(signMesh);
+            
+            // Add sign channels (horizontal lines on the face)
+            const numChannels = Math.ceil(signHeight * 1000 / channelSpacing) + 1;
+            const channelMaterial = new THREE.LineBasicMaterial({ color: 0x1e3c72, linewidth: 2 });
+            
+            for (let i = 0; i < numChannels; i++) {
+                const yOffset = (i / (numChannels - 1)) * signHeight - signHeight / 2;
+                const points = [];
+                points.push(new THREE.Vector3(-signWidth/2, signMesh.position.y + yOffset, 0.026));
+                points.push(new THREE.Vector3(signWidth/2, signMesh.position.y + yOffset, 0.026));
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const line = new THREE.Line(geometry, channelMaterial);
+                scene.add(line);
+                if (!windArrow) windArrow = new THREE.Group(); // Store lines for cleanup
+            }
+            
+            // Add wind arrow - pointing at the FACE of the sign (Z direction)
+            // Wind comes from in front (negative Z) and hits the front face
+            const arrowHelper = new THREE.ArrowHelper(
+                new THREE.Vector3(0, 0, 1), // Direction: toward the sign face
+                new THREE.Vector3(0, signMesh.position.y, -3), // Start position: in front of sign
+                2.5, // Length
+                0xff0000, // Red color
+                0.6, // Head length
+                0.4 // Head width
+            );
+            scene.add(arrowHelper);
+            windArrow = arrowHelper;
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        
+        // Calculation functions (same as before)
+        function calculate() {
+            const width = parseFloat(document.getElementById('sign-width').value);
+            const height = parseFloat(document.getElementById('sign-height').value);
+            const baseHeight = parseFloat(document.getElementById('base-height').value);
+            const altitude = parseFloat(document.getElementById('altitude').value);
+            const v_map = parseFloat(document.getElementById('vmap').value);
+            const terrain = document.getElementById('terrain').value;
+            const postHeight = parseFloat(document.getElementById('post-height').value);
+            const postDiameter = parseFloat(document.getElementById('post-diameter').value);
+            const thickness = parseFloat(document.getElementById('wall-thickness').value);
+            const material = document.getElementById('post-material').value;
+            const gradeValue = parseFloat(document.getElementById('material-grade').value);
+            const panelMaterial = document.getElementById('panel-material').value;
+            const channelSpacing = parseFloat(document.getElementById('channel-spacing').value);
+            const numPosts = parseInt(document.getElementById('num-posts').value);
+            
+            // Wind pressure calculation
+            const c_alt = 1 + 0.001 * altitude;
+            let c_e = terrain === 'sea' ? 3.0 : terrain === 'country' ? 2.5 : 2.0;
+            const v_b = v_map * c_alt;
+            const q_p = 0.613 * Math.pow(v_b, 2) * c_e * 0.89 * 1.07;
+            const A_ref = width * height;
+            const F_w = q_p * A_ref * 1.1 / 1000;
+            const leverArm = baseHeight + height / 2;
+            const M_total = F_w * leverArm;
+            
+            // Distribute moment among posts
+            // For multiple posts, load is shared
+            const M_per_post = M_total / numPosts;
+            
+            // Post stress calculation (per post)
+            const sectionType = document.getElementById('section-type').value;
+            const d_i = postDiameter - 2 * thickness;
+            let W;
+            if (material === 'timber') {
+                W = sectionType === 'circular' ? 
+                    Math.PI * Math.pow(postDiameter, 3) / 32 :
+                    Math.pow(postDiameter, 3) / 6;
+            } else {
+                W = sectionType === 'circular' ?
+                    Math.PI * (Math.pow(postDiameter, 4) - Math.pow(d_i, 4)) / (32 * postDiameter) :
+                    (Math.pow(postDiameter, 4) - Math.pow(d_i, 4)) / (6 * postDiameter);
+            }
+            
+            const gamma_M = material === 'steel' ? 1.0 : material === 'aluminium' ? 1.1 : 1.3;
+            const f_d = gradeValue / gamma_M;
+            const M_Nmm = M_per_post * 1e6;
+            const sigma = M_Nmm / W;
+            const eta = sigma / f_d;
+            
+            // Sign construction
+            const mat = MATERIALS[panelMaterial];
+            const stripWidth = 1000;
+            const I = mat.I_per_width * stripWidth;
+            const W_panel = mat.W_per_width * stripWidth;
+            const w = q_p / 1000;
+            const delta = (5 * w * Math.pow(channelSpacing, 4)) / (384 * mat.E * I);
+            const deltaLimit = channelSpacing / 200;
+            const M_panel = (w * Math.pow(channelSpacing, 2)) / 8;
+            const sigma_panel = M_panel / W_panel;
+            const panelOk = delta <= deltaLimit && sigma_panel <= mat.f_y;
+            const numChannels = Math.ceil(height * 1000 / channelSpacing) + 1;
+            
+            // Update results
+            document.getElementById('result-pressure').innerHTML = `${Math.round(q_p)}<span class="unit">Pa</span>`;
+            document.getElementById('result-force').innerHTML = `${F_w.toFixed(2)}<span class="unit">kN</span>`;
+            document.getElementById('result-moment').innerHTML = `${M_per_post.toFixed(2)}<span class="unit">kNm/post</span>`;
+            document.getElementById('result-util').innerHTML = `${(eta * 100).toFixed(0)}<span class="unit">%</span>`;
+            document.getElementById('result-channels').innerHTML = numChannels;
+            
+            const statusCard = document.getElementById('result-status-card');
+            const statusText = document.getElementById('result-status');
+            if (eta <= 1.0 && panelOk) {
+                statusCard.classList.remove('inadequate');
+                statusText.textContent = 'ADEQUATE';
+            } else {
+                statusCard.classList.add('inadequate');
+                statusText.textContent = 'INADEQUATE';
+            }
+            
+            // Update print fields
+            document.getElementById('print-sign-dims').textContent = 
+                `${width}m × ${height}m, Base height: ${baseHeight}m`;
+            document.getElementById('print-location').textContent = 
+                `${document.getElementById('postcode').value || 'Not specified'}, Altitude: ${altitude}m, v_map: ${v_map} m/s, Terrain: ${terrain}`;
+            document.getElementById('print-post-config').textContent = 
+                `${numPosts} × ${sectionType} ${postDiameter}mm, Height: ${postHeight}m, Embedment: ${document.getElementById('embedment').value}m`;
+            document.getElementById('print-material').textContent = 
+                `${material}, Grade: ${gradeValue} N/mm², Wall thickness: ${thickness}mm, Panel: ${MATERIALS[panelMaterial].name}, Rib spacing: ${document.getElementById('channel-spacing').value}mm`;
+        }
+        
+        function updateMaterialGrades() {
+            const material = document.getElementById('post-material').value;
+            const gradeSelect = document.getElementById('material-grade');
+            const gradeLabel = document.getElementById('grade-label');
+            
+            if (material === 'steel') {
+                gradeLabel.textContent = 'Steel grade';
+                gradeSelect.innerHTML = `
+                    <option value="235">S235 (f_y = 235 N/mm²)</option>
+                    <option value="275" selected>S275 (f_y = 275 N/mm²)</option>
+                    <option value="355">S355 (f_y = 355 N/mm²)</option>
+                `;
+            } else if (material === 'aluminium') {
+                gradeLabel.textContent = 'Aluminium grade';
+                gradeSelect.innerHTML = `
+                    <option value="110">6061-T6 (f_y = 110 N/mm²)</option>
+                    <option value="160" selected>6063-T6 (f_y = 160 N/mm²)</option>
+                `;
+            } else {
+                gradeLabel.textContent = 'Timber grade';
+                gradeSelect.innerHTML = `
+                    <option value="16">C16 (f_m,k = 16 N/mm²)</option>
+                    <option value="24" selected>C24 (f_m,k = 24 N/mm²)</option>
+                    <option value="27">C27 (f_m,k = 27 N/mm²)</option>
+                `;
+            }
+        }
+        
+        function selectSignType(type) {
+            currentSignType = type;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+        
+        // Postcode lookup for wind speed
+        let postcodeTimeout;
+        function lookupPostcode() {
+            clearTimeout(postcodeTimeout);
+            postcodeTimeout = setTimeout(() => {
+                const postcode = document.getElementById('postcode').value.trim().toUpperCase();
+                if (postcode.length < 5) return;
+                
+                // UK wind speed map (simplified - based on postcode area)
+                // Real implementation would use postcodes.io API + wind speed database
+                const windSpeedMap = {
+                    // Scotland (higher wind speeds)
+                    'AB': 24.5, 'DD': 24.0, 'EH': 24.5, 'FK': 24.0, 'G': 24.5, 'HS': 26.0,
+                    'IV': 25.0, 'KA': 24.0, 'KW': 26.5, 'KY': 24.0, 'ML': 24.0, 'PA': 25.0,
+                    'PH': 24.5, 'TD': 24.0, 'ZE': 27.0,
+                    // Northern England
+                    'CA': 24.0, 'DH': 23.5, 'DL': 23.5, 'NE': 24.0, 'SR': 23.5, 'TS': 23.5,
+                    // Wales (coastal = higher)
+                    'CF': 23.5, 'LD': 23.5, 'LL': 24.5, 'NP': 23.0, 'SA': 24.0, 'SY': 23.5,
+                    // Southwest England (coastal)
+                    'EX': 23.5, 'PL': 24.0, 'TQ': 23.5, 'TR': 24.5,
+                    // Southeast England (lower)
+                    'BN': 23.0, 'BR': 22.5, 'CR': 22.5, 'CT': 23.5, 'DA': 22.5, 'GU': 22.5,
+                    'ME': 23.0, 'RH': 22.5, 'SM': 22.5, 'TN': 22.5, 'TW': 22.5,
+                    // London
+                    'E': 22.5, 'EC': 22.5, 'N': 22.5, 'NW': 22.5, 'SE': 22.5, 'SW': 22.5,
+                    'W': 22.5, 'WC': 22.5,
+                    // Midlands
+                    'B': 22.5, 'CV': 22.5, 'DE': 22.5, 'DY': 22.5, 'LE': 22.5, 'NG': 22.5,
+                    'NN': 22.5, 'ST': 22.5, 'WS': 22.5, 'WV': 22.5,
+                    // East England
+                    'CB': 23.0, 'CM': 22.5, 'CO': 23.0, 'IP': 23.5, 'LN': 23.5, 'NR': 23.5,
+                    'PE': 23.0, 'SG': 22.5,
+                    // Northwest England
+                    'BB': 23.5, 'BL': 23.0, 'CH': 23.5, 'CW': 23.0, 'FY': 24.0, 'L': 23.5,
+                    'LA': 24.0, 'M': 23.0, 'OL': 23.0, 'PR': 23.5, 'SK': 23.0, 'WA': 23.0, 'WN': 23.0,
+                    // Yorkshire
+                    'BD': 23.5, 'DN': 23.0, 'HD': 23.5, 'HG': 23.5, 'HU': 24.0, 'HX': 23.5,
+                    'LS': 23.0, 'S': 23.0, 'WF': 23.0, 'YO': 23.5,
+                    // Southwest
+                    'BA': 23.0, 'BH': 23.5, 'BS': 23.0, 'DT': 23.5, 'GL': 23.0, 'SN': 22.5,
+                    'SP': 22.5, 'TA': 23.5,
+                    // South
+                    'PO': 23.5, 'RG': 22.5, 'SL': 22.5, 'SO': 23.0,
+                    // Northern Ireland
+                    'BT': 24.5
+                };
+                
+                // Extract postcode area (first 1-2 letters)
+                const area = postcode.match(/^[A-Z]{1,2}/);
+                if (area && windSpeedMap[area[0]]) {
+                    document.getElementById('vmap').value = windSpeedMap[area[0]];
+                    calculate();
+                }
+            }, 500); // Debounce 500ms
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', () => {
+            initScene();
+            calculate();
+            
+            // Set print date
+            document.getElementById('print-date').textContent = new Date().toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+            });
+        });
+        
+        // Internal use: Keyboard shortcut for printing (Ctrl+Shift+P)
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && e.key === 'P') {
+                e.preventDefault();
+                window.print();
+            }
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const container = document.getElementById('canvas3d');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+        
+        // Contact form for engineered design
+        function openContactForm() {
+            const subject = encodeURIComponent('Request for Engineered Sign Design Calculation');
+            const body = encodeURIComponent(`Hello,
+
+I would like to request a full engineered design calculation for a post-mounted sign with the following preliminary specifications:
+
+Sign Dimensions:
+- Width: ${document.getElementById('sign-width').value}m
+- Height: ${document.getElementById('sign-height').value}m
+- Base height: ${document.getElementById('base-height').value}m
+
+Location:
+- Postcode: ${document.getElementById('postcode').value || 'Not specified'}
+- Altitude: ${document.getElementById('altitude').value}m
+- Wind speed (v_map): ${document.getElementById('vmap').value} m/s
+- Terrain: ${document.getElementById('terrain').value}
+
+Post Configuration:
+- Number of posts: ${document.getElementById('num-posts').value}
+- Post height: ${document.getElementById('post-height').value}m
+- Section: ${document.getElementById('section-type').value}
+- Diameter: ${document.getElementById('post-diameter').value}mm
+- Material: ${document.getElementById('post-material').value}
+
+Please provide:
+☐ Full design calculations to BS EN 1991-1-4 and BS EN 1993-1-1
+☐ Stamped and signed drawings
+☐ Building control submission package
+☐ Site-specific wind assessment
+
+Best regards`);
+            
+            // Open email client
+            window.location.href = `mailto:sales@nbnesigns.com?subject=${subject}&body=${body}`;
+        }
+    </script>
+</body>
+</html>

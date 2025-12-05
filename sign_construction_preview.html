@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Construction Calculator - Preview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+        }
+        
+        .section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .section h2 {
+            font-size: 18px;
+            color: #1e3c72;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 120px 60px;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .input-row label {
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .input-row input,
+        .input-row select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .input-row .unit {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .subsection-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #667eea;
+            margin: 20px 0 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .calculate-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .result-card {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .result-card h3 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .result-card .value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1e3c72;
+        }
+        
+        .result-card .unit-label {
+            font-size: 14px;
+            color: #999;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .status-pass {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-adequate {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .utilization-bar {
+            width: 100%;
+            height: 24px;
+            background: #eee;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .utilization-fill {
+            height: 100%;
+            transition: width 0.5s, background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .util-low {
+            background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .util-medium {
+            background: linear-gradient(90deg, #ffc107 0%, #fd7e14 100%);
+        }
+        
+        .util-high {
+            background: linear-gradient(90deg, #dc3545 0%, #c82333 100%);
+        }
+        
+        .recommendations {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+        
+        .recommendations h4 {
+            font-size: 14px;
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .recommendations ul {
+            margin-left: 20px;
+            font-size: 13px;
+            color: #856404;
+        }
+        
+        .recommendations li {
+            margin-bottom: 5px;
+        }
+        
+        .quality-note {
+            background: #e7f3ff;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #004085;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏗️ Sign Construction Calculator</h1>
+            <p>Panel deflection and channel spacing analysis per BS 8442:2015</p>
+            <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">Integrated Preview - Steel Composite Support</p>
+        </div>
+        
+        <div class="content">
+            <!-- INPUT SECTION -->
+            <div class="section">
+                <h2>Input Parameters</h2>
+                
+                <div class="subsection-title">Sign Dimensions</div>
+                <div class="input-row">
+                    <label>Sign width</label>
+                    <input type="number" id="sign-width" value="3.0" step="0.1">
+                    <span class="unit">m</span>
+                </div>
+                <div class="input-row">
+                    <label>Sign height</label>
+                    <input type="number" id="sign-height" value="2.0" step="0.1">
+                    <span class="unit">m</span>
+                </div>
+                
+                <div class="subsection-title">Panel Construction</div>
+                <div class="input-row">
+                    <label>Panel material</label>
+                    <select id="panel-material">
+                        <option value="acm_3mm">3mm ACM (Dibond)</option>
+                        <option value="aluminium_3mm">3mm Aluminium</option>
+                        <option value="steel_composite_3mm" selected>3mm Steel Composite</option>
+                        <option value="aluminium_4mm">4mm Aluminium</option>
+                    </select>
+                    <span class="unit"></span>
+                </div>
+                <div class="input-row">
+                    <label>Channel spacing</label>
+                    <input type="number" id="channel-spacing" value="400" step="50">
+                    <span class="unit">mm</span>
+                </div>
+                
+                <div class="subsection-title">Wind Loading</div>
+                <div class="input-row">
+                    <label>Wind pressure (q_p)</label>
+                    <input type="number" id="wind-pressure" value="828" step="10">
+                    <span class="unit">Pa</span>
+                </div>
+                
+                <button class="calculate-btn" onclick="calculate()">Calculate Panel Adequacy</button>
+            </div>
+            
+            <!-- OUTPUT SECTION -->
+            <div class="section">
+                <h2>Results</h2>
+                
+                <div id="results-container">
+                    <p style="text-align: center; color: #999; padding: 40px 0;">
+                        Enter parameters and click Calculate
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Simulated sign construction calculator
+        // In production, this would call the Python backend API
+        
+        const MATERIALS = {
+            'acm_3mm': {
+                name: '3mm Aluminium Composite (ACM/Dibond)',
+                I_per_width: 94.5,
+                W_per_width: 63.0,
+                E: 70000,
+                f_y: 100
+            },
+            'aluminium_3mm': {
+                name: '3mm Solid Aluminium 1050',
+                I_per_width: 2.25,
+                W_per_width: 1.5,
+                E: 70000,
+                f_y: 100
+            },
+            'steel_composite_3mm': {
+                name: '3mm Steel Composite Panel',
+                I_per_width: 472.5,
+                W_per_width: 315.0,
+                E: 210000,
+                f_y: 235
+            },
+            'aluminium_4mm': {
+                name: '4mm Solid Aluminium 1050',
+                I_per_width: 5.33,
+                W_per_width: 2.67,
+                E: 70000,
+                f_y: 100
+            }
+        };
+        
+        function calculate() {
+            // Get inputs
+            const signWidth = parseFloat(document.getElementById('sign-width').value);
+            const signHeight = parseFloat(document.getElementById('sign-height').value) * 1000; // m to mm
+            const materialKey = document.getElementById('panel-material').value;
+            const spacing = parseFloat(document.getElementById('channel-spacing').value);
+            const windPressure = parseFloat(document.getElementById('wind-pressure').value);
+            
+            const material = MATERIALS[materialKey];
+            
+            // Calculate panel properties
+            const stripWidth = 1000; // mm
+            const I = material.I_per_width * stripWidth;
+            const W = material.W_per_width * stripWidth;
+            const E = material.E;
+            const f_y = material.f_y;
+            
+            // Distributed load (N/mm)
+            const w = windPressure / 1000;
+            
+            // Deflection (mm)
+            const delta = (5 * w * Math.pow(spacing, 4)) / (384 * E * I);
+            const deltaLimit = spacing / 200;
+            const deflectionOk = delta <= deltaLimit;
+            const deflectionUtil = delta / deltaLimit;
+            
+            // Stress (MPa)
+            const M_max = (w * Math.pow(spacing, 2)) / 8;
+            const sigma = M_max / W;
+            const sigmaLimit = f_y;
+            const stressOk = sigma <= sigmaLimit;
+            const stressUtil = sigma / sigmaLimit;
+            
+            // Overall status
+            const overallOk = deflectionOk && stressOk;
+            
+            // Calculate number of channels
+            const numSpans = Math.ceil(signHeight / spacing);
+            const numChannels = numSpans + 1;
+            
+            // Calculate recommended spacing if failed
+            let maxSpacing = spacing;
+            if (!deflectionOk) {
+                maxSpacing = Math.min(maxSpacing, Math.pow((384 * E * I * deltaLimit) / (5 * w), 0.25));
+            }
+            if (!stressOk) {
+                maxSpacing = Math.min(maxSpacing, Math.sqrt((8 * W * sigmaLimit) / w));
+            }
+            const numChannelsRec = Math.ceil(signHeight / maxSpacing) + 1;
+            
+            // Quality rating
+            let quality;
+            if (spacing <= 300) {
+                quality = 'Highway/Professional grade construction';
+            } else if (spacing <= 450) {
+                quality = 'Good quality construction';
+            } else if (spacing <= 600) {
+                quality = 'Budget construction - marginal for high wind areas';
+            } else {
+                quality = 'Amateur construction - not recommended';
+            }
+            
+            // Display results
+            displayResults({
+                material: material.name,
+                deflection: {
+                    calculated: delta,
+                    limit: deltaLimit,
+                    status: deflectionOk ? 'PASS' : 'FAIL',
+                    utilization: deflectionUtil
+                },
+                stress: {
+                    calculated: sigma,
+                    limit: sigmaLimit,
+                    status: stressOk ? 'PASS' : 'FAIL',
+                    utilization: stressUtil
+                },
+                overallStatus: overallOk ? 'ADEQUATE' : 'INADEQUATE',
+                numChannels: numChannels,
+                numChannelsRec: numChannelsRec,
+                maxSpacing: maxSpacing,
+                quality: quality,
+                spacing: spacing
+            });
+        }
+        
+        function displayResults(result) {
+            const container = document.getElementById('results-container');
+            
+            const deflectionUtilClass = result.deflection.utilization < 0.7 ? 'util-low' : 
+                                       result.deflection.utilization < 1.0 ? 'util-medium' : 'util-high';
+            const stressUtilClass = result.stress.utilization < 0.7 ? 'util-low' : 
+                                   result.stress.utilization < 1.0 ? 'util-medium' : 'util-high';
+            
+            let html = `
+                <div class="result-card">
+                    <h3>Material</h3>
+                    <div class="value" style="font-size: 16px;">${result.material}</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3>Panel Deflection</h3>
+                    <div class="value">${result.deflection.calculated.toFixed(3)} <span class="unit-label">mm</span></div>
+                    <div style="font-size: 13px; color: #666; margin-top: 5px;">
+                        Limit: ${result.deflection.limit.toFixed(2)} mm (L/200)
+                    </div>
+                    <div class="utilization-bar">
+                        <div class="utilization-fill ${deflectionUtilClass}" style="width: ${Math.min(result.deflection.utilization * 100, 100)}%">
+                            ${(result.deflection.utilization * 100).toFixed(0)}%
+                        </div>
+                    </div>
+                    <span class="status-badge status-${result.deflection.status.toLowerCase()}">${result.deflection.status}</span>
+                </div>
+                
+                <div class="result-card">
+                    <h3>Panel Stress</h3>
+                    <div class="value">${result.stress.calculated.toFixed(1)} <span class="unit-label">MPa</span></div>
+                    <div style="font-size: 13px; color: #666; margin-top: 5px;">
+                        Limit: ${result.stress.limit.toFixed(0)} MPa (yield)
+                    </div>
+                    <div class="utilization-bar">
+                        <div class="utilization-fill ${stressUtilClass}" style="width: ${Math.min(result.stress.utilization * 100, 100)}%">
+                            ${(result.stress.utilization * 100).toFixed(1)}%
+                        </div>
+                    </div>
+                    <span class="status-badge status-${result.stress.status.toLowerCase()}">${result.stress.status}</span>
+                </div>
+                
+                <div class="result-card">
+                    <h3>Channels Required</h3>
+                    <div class="value">${result.numChannels} <span class="unit-label">channels</span></div>
+                    <div style="font-size: 13px; color: #666; margin-top: 5px;">
+                        @ ${result.spacing}mm spacing
+                    </div>
+                </div>
+                
+                <div class="result-card">
+                    <h3>Overall Status</h3>
+                    <span class="status-badge status-${result.overallStatus.toLowerCase()}" style="font-size: 16px; padding: 10px 20px;">
+                        ${result.overallStatus}
+                    </span>
+                </div>
+                
+                <div class="quality-note">
+                    📊 ${result.quality}
+                </div>
+            `;
+            
+            if (result.overallStatus === 'INADEQUATE') {
+                html += `
+                    <div class="recommendations">
+                        <h4>⚠️ Recommendations</h4>
+                        <ul>
+                            <li>Reduce channel spacing to ${Math.round(result.maxSpacing)}mm or less</li>
+                            <li>This requires ${result.numChannelsRec} channels (currently ${result.numChannels})</li>
+                            <li>OR upgrade to thicker/stiffer panel material</li>
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        // Auto-calculate on load
+        window.addEventListener('load', () => {
+            calculate();
+        });
+    </script>
+</body>
+</html>

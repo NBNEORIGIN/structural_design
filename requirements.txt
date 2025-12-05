@@ -1,0 +1,5 @@
+flask==3.0.0
+flask-cors==4.0.0
+numpy==1.26.2
+reportlab==4.0.7
+pytest==7.4.3
