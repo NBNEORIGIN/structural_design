@@ -895,6 +895,124 @@
             });
         }
         
+        function renderWallMountedSign(signWidth, signHeight) {
+            const mountHeight = parseFloat(document.getElementById('wall-mount-height').value);
+            const numFixings = parseInt(document.getElementById('num-fixings').value);
+            const channelSpacing = parseFloat(document.getElementById('channel-spacing').value);
+            
+            // Create wall (vertical plane behind sign)
+            const wallGeometry = new THREE.PlaneGeometry(8, 6);
+            const wallMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x4a4a4a,
+                side: THREE.DoubleSide,
+                roughness: 0.8
+            });
+            const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+            wall.position.set(0, 3, -0.1); // Behind the sign
+            wall.receiveShadow = true;
+            postMesh = wall; // Reuse postMesh variable for cleanup
+            scene.add(wall);
+            
+            // Create sign panel (flush against wall)
+            const signGeometry = new THREE.BoxGeometry(signWidth, signHeight, 0.05);
+            const signMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xFFFFFF,
+                metalness: 0.1,
+                roughness: 0.6
+            });
+            signMesh = new THREE.Mesh(signGeometry, signMaterial);
+            signMesh.position.set(0, mountHeight + signHeight / 2, 0);
+            signMesh.castShadow = true;
+            scene.add(signMesh);
+            
+            // Add fixing points (red spheres at corners/edges)
+            const fixingGeometry = new THREE.SphereGeometry(0.04, 16, 16);
+            const fixingMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xff0000,
+                metalness: 0.8,
+                roughness: 0.2
+            });
+            
+            // Calculate fixing positions based on number
+            const fixingPositions = [];
+            if (numFixings === 4) {
+                // Corners
+                fixingPositions.push(
+                    [-signWidth/2 + 0.1, mountHeight + 0.1, 0.03],
+                    [signWidth/2 - 0.1, mountHeight + 0.1, 0.03],
+                    [-signWidth/2 + 0.1, mountHeight + signHeight - 0.1, 0.03],
+                    [signWidth/2 - 0.1, mountHeight + signHeight - 0.1, 0.03]
+                );
+            } else if (numFixings === 6) {
+                // Corners + mid points
+                fixingPositions.push(
+                    [-signWidth/2 + 0.1, mountHeight + 0.1, 0.03],
+                    [0, mountHeight + 0.1, 0.03],
+                    [signWidth/2 - 0.1, mountHeight + 0.1, 0.03],
+                    [-signWidth/2 + 0.1, mountHeight + signHeight - 0.1, 0.03],
+                    [0, mountHeight + signHeight - 0.1, 0.03],
+                    [signWidth/2 - 0.1, mountHeight + signHeight - 0.1, 0.03]
+                );
+            } else if (numFixings === 8) {
+                // Grid pattern
+                fixingPositions.push(
+                    [-signWidth/2 + 0.1, mountHeight + 0.1, 0.03],
+                    [signWidth/2 - 0.1, mountHeight + 0.1, 0.03],
+                    [-signWidth/2 + 0.1, mountHeight + signHeight/2, 0.03],
+                    [signWidth/2 - 0.1, mountHeight + signHeight/2, 0.03],
+                    [-signWidth/2 + 0.1, mountHeight + signHeight - 0.1, 0.03],
+                    [signWidth/2 - 0.1, mountHeight + signHeight - 0.1, 0.03],
+                    [0, mountHeight + 0.1, 0.03],
+                    [0, mountHeight + signHeight - 0.1, 0.03]
+                );
+            } else if (numFixings === 12) {
+                // Dense grid
+                for (let row = 0; row < 3; row++) {
+                    for (let col = 0; col < 4; col++) {
+                        const x = -signWidth/2 + 0.1 + (col * (signWidth - 0.2) / 3);
+                        const y = mountHeight + 0.1 + (row * (signHeight - 0.2) / 2);
+                        fixingPositions.push([x, y, 0.03]);
+                    }
+                }
+            }
+            
+            fixingPositions.forEach(pos => {
+                const fixing = new THREE.Mesh(fixingGeometry, fixingMaterial);
+                fixing.position.set(...pos);
+                scene.add(fixing);
+            });
+            
+            // Add sign channels (horizontal lines) - only if spacing > 0
+            if (channelSpacing > 0) {
+                const numChannels = Math.ceil(signHeight * 1000 / channelSpacing) + 1;
+                const channelMaterial = new THREE.LineBasicMaterial({ color: 0x1e3c72, linewidth: 2 });
+                
+                for (let i = 0; i < numChannels; i++) {
+                    const yOffset = (i / (numChannels - 1)) * signHeight - signHeight / 2;
+                    const points = [];
+                    points.push(new THREE.Vector3(-signWidth/2, signMesh.position.y + yOffset, 0.026));
+                    points.push(new THREE.Vector3(signWidth/2, signMesh.position.y + yOffset, 0.026));
+                    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                    const line = new THREE.Line(geometry, channelMaterial);
+                    scene.add(line);
+                }
+            }
+            
+            // Add wind arrow - pointing at sign face
+            const arrowHelper = new THREE.ArrowHelper(
+                new THREE.Vector3(0, 0, 1), // Direction: toward the sign
+                new THREE.Vector3(0, mountHeight + signHeight/2, -2.5), // Start position
+                2, // Length
+                0xff0000, // Red color
+                0.5, // Head length
+                0.3 // Head width
+            );
+            windArrow = arrowHelper;
+            scene.add(windArrow);
+            
+            renderer.render(scene, camera);
+        }
+        
         function updateScene() {
             // Clear existing meshes
             if (signMesh) scene.remove(signMesh);
@@ -916,6 +1034,14 @@
             // Get dimensions
             const signWidth = parseFloat(document.getElementById('sign-width').value);
             const signHeight = parseFloat(document.getElementById('sign-height').value);
+            
+            // Route to appropriate rendering function based on sign type
+            if (currentSignType === 'wall_mounted') {
+                renderWallMountedSign(signWidth, signHeight);
+                return;
+            }
+            
+            // POST-MOUNTED RENDERING (existing code)
             const postHeight = parseFloat(document.getElementById('post-height').value);
             // Posts extend to top of sign
             const totalPostHeight = postHeight + signHeight;
