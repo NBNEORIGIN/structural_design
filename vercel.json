@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "name": "wind-loading-calculator",
+  "builds": [
+    {
+      "src": "preview_3d.html",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/preview_3d.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
+}
