@@ -64,82 +64,77 @@
         .app-container {
             display: grid;
             grid-template-columns: 320px 1fr 320px;
-            grid-template-rows: auto 80px 1fr 200px;
+            grid-template-rows: auto 1fr 200px;
             height: 100vh;
             gap: 0;
         }
         
-        /* Disclaimer Banner */
-        .disclaimer-banner {
+        /* Header */
+        .header {
             grid-column: 1 / -1;
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-            padding: 15px 40px;
-            display: flex;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 20px 40px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 30px;
             align-items: center;
-            justify-content: space-between;
             box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            z-index: 101;
-            animation: slideDown 0.5s ease-out;
+            z-index: 100;
         }
         
-        @keyframes slideDown {
-            from {
-                transform: translateY(-100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
         
-        .disclaimer-content {
-            flex: 1;
+        .header-title {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 15px;
         }
         
-        .disclaimer-icon {
-            font-size: 32px;
-            animation: pulse 2s ease-in-out infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-        
-        .disclaimer-text {
-            flex: 1;
-        }
-        
-        .disclaimer-text h3 {
-            font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 5px;
-            color: white;
-        }
-        
-        .disclaimer-text p {
-            font-size: 12px;
-            line-height: 1.5;
-            color: rgba(255,255,255,0.95);
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
             margin: 0;
         }
         
-        .disclaimer-cta {
-            margin-left: 20px;
+        .header .subtitle {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .header-disclaimer {
+            background: rgba(255,107,107,0.15);
+            border-left: 3px solid #ff6b6b;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 11px;
+            line-height: 1.5;
+            color: rgba(255,255,255,0.9);
+        }
+        
+        .header-disclaimer strong {
+            color: #ff6b6b;
+            font-weight: 600;
+        }
+        
+        .header-right {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-end;
         }
         
         .cta-button {
             padding: 12px 24px;
-            background: white;
-            color: #ee5a6f;
+            background: #ff6b6b;
+            color: white;
             border: none;
             border-radius: 8px;
             font-size: 14px;
-            font-weight: 700;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
@@ -149,34 +144,11 @@
         .cta-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(0,0,0,0.3);
-            background: #f8f9fa;
+            background: #ee5a6f;
         }
         
         .cta-button:active {
             transform: translateY(0);
-        }
-        
-        /* Header */
-        .header {
-            grid-column: 1 / -1;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            z-index: 100;
-            border-top: 3px solid rgba(255,255,255,0.1);
-        }
-        
-        .header h1 {
-            font-size: 24px;
-            font-weight: 600;
-        }
-        
-        .header .subtitle {
-            font-size: 12px;
-            opacity: 0.8;
         }
         
         .disclaimer {
@@ -451,30 +423,26 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- Disclaimer Banner -->
-        <div class="disclaimer-banner">
-            <div class="disclaimer-content">
-                <div class="disclaimer-icon">⚠️</div>
-                <div class="disclaimer-text">
-                    <h3>IMPORTANT DISCLAIMER</h3>
-                    <p><strong>This tool is provided "as is" with no warranties or guarantees.</strong> No liability is accepted for its use. This calculator provides preliminary estimates only and is NOT a substitute for professional engineered calculations. Results are not acceptable for insurance, building control, or certification purposes. For verified structural calculations and certified designs, please contact our engineering team.</p>
-                </div>
-            </div>
-            <div class="disclaimer-cta">
-                <button class="cta-button" onclick="openEnquiryForm()">📧 Get Professional Calculation</button>
-            </div>
-        </div>
-        
         <!-- Header -->
         <div class="header">
-            <div>
-                <h1>🌬️ Wind Loading Calculator</h1>
-                <div class="subtitle">BS EN 1991-1-4 | Interactive 3D Design Tool</div>
+            <div class="header-left">
+                <div class="header-title">
+                    <div>
+                        <h1>🌬️ Wind Loading Calculator</h1>
+                        <div class="subtitle">BS EN 1991-1-4 | Interactive 3D Design Tool</div>
+                    </div>
+                    <div class="sign-type-tabs">
+                        <button class="tab-btn" onclick="selectSignType('wall_mounted')">Wall-Mounted</button>
+                        <button class="tab-btn" onclick="selectSignType('projecting')">Projecting</button>
+                        <button class="tab-btn active" onclick="selectSignType('post_mounted')">Post-Mounted</button>
+                    </div>
+                </div>
+                <div class="header-disclaimer">
+                    ⚠️ <strong>Disclaimer:</strong> This tool is provided "as is" with no warranties. No liability is accepted for its use. Preliminary estimates only - NOT a substitute for professional engineered calculations. Not acceptable for insurance, building control, or certification purposes.
+                </div>
             </div>
-            <div class="sign-type-tabs">
-                <button class="tab-btn" onclick="selectSignType('wall_mounted')">Wall-Mounted</button>
-                <button class="tab-btn" onclick="selectSignType('projecting')">Projecting</button>
-                <button class="tab-btn active" onclick="selectSignType('post_mounted')">Post-Mounted</button>
+            <div class="header-right">
+                <button class="cta-button" onclick="openEnquiryForm()">📧 Get Professional Calculation</button>
             </div>
         </div>
         
