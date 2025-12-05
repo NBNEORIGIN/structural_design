@@ -1423,6 +1423,124 @@
         }
         
         // Calculation functions
+        function calculateProjecting() {
+            // Get inputs
+            const width = parseFloat(document.getElementById('sign-width').value);
+            const height = parseFloat(document.getElementById('sign-height').value);
+            const projectionDepth = parseFloat(document.getElementById('projection-depth').value);
+            const mountHeight = parseFloat(document.getElementById('proj-mount-height').value);
+            const altitude = parseFloat(document.getElementById('altitude').value);
+            const v_map = parseFloat(document.getElementById('vmap').value);
+            const terrain = document.getElementById('terrain').value;
+            const bracketType = document.getElementById('bracket-type').value;
+            const bracketMaterial = document.getElementById('bracket-material').value;
+            const bracketSection = document.getElementById('bracket-section').value;
+            const numFixings = parseInt(document.getElementById('bracket-fixings').value);
+            const panelMaterial = document.getElementById('panel-material').value;
+            const channelSpacing = parseFloat(document.getElementById('channel-spacing').value);
+            
+            // Wind pressure calculation
+            const c_alt = 1 + 0.001 * altitude;
+            let c_e = terrain === 'sea' ? 3.0 : terrain === 'country' ? 2.5 : 2.0;
+            const v_b = v_map * c_alt;
+            const q_p = 0.613 * Math.pow(v_b, 2) * c_e * 0.89 * 1.07;
+            
+            // Wind force on sign (can hit either face)
+            const A_ref = width * height;
+            const c_f = 1.8; // Force coefficient for signboards
+            const F_w = q_p * A_ref * c_f / 1000; // kN
+            
+            // Bracket section properties (W in cm³, I in cm⁴)
+            const bracketProperties = {
+                '100x100_shs': { W: 37.7, I: 188.5, name: '100×100×5 SHS' },
+                '150x150_shs': { W: 92.8, I: 696, name: '150×150×6 SHS' },
+                '200x100_rhs': { W: 77.3, I: 773, name: '200×100×6 RHS' },
+                '120x120_shs': { W: 56.4, I: 338, name: '120×120×5 SHS' }
+            };
+            const section = bracketProperties[bracketSection];
+            
+            // Number of brackets based on type
+            const numBrackets = bracketType === 'top_bottom' ? 2 : 1;
+            
+            // Bracket bending moment (cantilever from wall)
+            const bracketLength = projectionDepth; // Projection depth
+            const M_bracket = (F_w * bracketLength) / numBrackets; // kNm per bracket
+            
+            // Bracket stress
+            const W_mm3 = section.W * 1000; // Convert cm³ to mm³
+            const M_Nmm = M_bracket * 1e6; // Convert kNm to Nmm
+            const sigma_bracket = M_Nmm / W_mm3; // N/mm²
+            
+            // Material properties
+            const E = bracketMaterial === 'steel' ? 210000 : 70000; // N/mm²
+            const f_y = bracketMaterial === 'steel' ? 275 : 160; // N/mm²
+            const gamma_M = bracketMaterial === 'steel' ? 1.0 : 1.1;
+            const f_d = f_y / gamma_M;
+            
+            // Bracket utilization
+            const eta_bracket = sigma_bracket / f_d;
+            
+            // Bracket deflection (cantilever formula: δ = FL³/3EI)
+            const I_mm4 = section.I * 10000; // Convert cm⁴ to mm⁴
+            const F_N = (F_w / numBrackets) * 1000; // Force per bracket in N
+            const L_mm = bracketLength * 1000; // Length in mm
+            const delta_bracket = (F_N * Math.pow(L_mm, 3)) / (3 * E * I_mm4); // mm
+            const delta_limit = L_mm / 200; // L/200 limit
+            
+            // Wall fixing loads
+            const bracketSpacing = bracketType === 'top_bottom' ? height : 0;
+            const M_wall = M_bracket; // Moment at wall connection
+            const T_per_fixing = bracketSpacing > 0 ? 
+                M_wall / (bracketSpacing * numFixings) : 
+                M_wall / (0.3 * numFixings); // Assume 300mm spacing for single bracket
+            const V_per_fixing = F_w / (numBrackets * numFixings);
+            
+            // Panel deflection check
+            const mat = MATERIALS[panelMaterial];
+            const stripWidth = 1000;
+            const I = mat.I_per_width * stripWidth;
+            const w = q_p / 1000;
+            
+            let delta, deltaLimit, numChannels;
+            if (channelSpacing === 0) {
+                delta = 0;
+                deltaLimit = 0;
+                numChannels = 0;
+            } else {
+                delta = (5 * w * Math.pow(channelSpacing, 4)) / (384 * mat.E * I);
+                deltaLimit = channelSpacing / 200;
+                numChannels = Math.ceil(height * 1000 / channelSpacing) + 1;
+            }
+            
+            // Update results
+            document.getElementById('result-pressure').innerHTML = `${Math.round(q_p)}<span class="unit">Pa</span>`;
+            document.getElementById('result-force').innerHTML = `${F_w.toFixed(2)}<span class="unit">kN</span>`;
+            document.getElementById('result-moment').innerHTML = `${M_bracket.toFixed(2)}<span class="unit">kNm/bracket</span>`;
+            document.getElementById('result-util').innerHTML = `${(eta_bracket * 100).toFixed(0)}<span class="unit">%</span>`;
+            document.getElementById('result-channels').innerHTML = numChannels;
+            document.getElementById('result-deflection').innerHTML = `${delta_bracket.toFixed(2)}<span class="unit">mm</span>`;
+            document.getElementById('calc-ribs').textContent = numChannels;
+            
+            const statusCard = document.getElementById('result-status-card');
+            const statusText = document.getElementById('result-status');
+            if (eta_bracket <= 1.0 && delta_bracket <= delta_limit) {
+                statusCard.classList.remove('inadequate');
+                statusText.textContent = 'ADEQUATE';
+            } else {
+                statusCard.classList.add('inadequate');
+                statusText.textContent = 'INADEQUATE';
+            }
+            
+            // Update print fields
+            document.getElementById('print-sign-dims').textContent = `${width}m × ${height}m × ${projectionDepth}m projection`;
+            document.getElementById('print-location').textContent = 
+                `${document.getElementById('postcode').value || 'Not specified'}, Altitude: ${altitude}m, v_map: ${v_map} m/s, Terrain: ${terrain}`;
+            document.getElementById('print-post-config').textContent = 
+                `Projecting, ${bracketType} brackets, ${section.name}, Mount height: ${mountHeight}m`;
+            document.getElementById('print-material').textContent = 
+                `${bracketMaterial} brackets (f_y: ${f_y} N/mm²), ${numFixings} fixings/bracket, Panel: ${MATERIALS[panelMaterial].name}, Rib spacing: ${channelSpacing}mm`;
+        }
+        
         function calculateWallMounted() {
             // Get inputs
             const width = parseFloat(document.getElementById('sign-width').value);
@@ -1527,6 +1645,9 @@
             // Route to appropriate calculation based on sign type
             if (currentSignType === 'wall_mounted') {
                 calculateWallMounted();
+                return;
+            } else if (currentSignType === 'projecting') {
+                calculateProjecting();
                 return;
             }
             
