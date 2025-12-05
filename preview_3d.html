@@ -465,11 +465,7 @@
                 </div>
                 <div class="input-row">
                     <label>Height</label>
-                    <input type="number" id="sign-height" value="2.0" step="0.1" oninput="updateScene()">
-                </div>
-                <div class="input-row">
-                    <label>Base height above ground</label>
-                    <input type="number" id="base-height" value="2.5" step="0.1" oninput="updateScene()">
+                    <input type="number" id="sign-height" value="2" step="0.1" oninput="updateScene()">
                 </div>
             </div>
             
@@ -839,8 +835,9 @@
             // Get dimensions
             const signWidth = parseFloat(document.getElementById('sign-width').value);
             const signHeight = parseFloat(document.getElementById('sign-height').value);
-            const baseHeight = parseFloat(document.getElementById('base-height').value);
             const postHeight = parseFloat(document.getElementById('post-height').value);
+            // Posts extend to top of sign
+            const totalPostHeight = postHeight + signHeight;
             const embedment = parseFloat(document.getElementById('embedment').value);
             const postDiameter = parseFloat(document.getElementById('post-diameter').value) / 1000; // mm to m
             const sectionType = document.getElementById('section-type').value;
@@ -855,12 +852,12 @@
                 'timber': 0x8B4513
             };
             
-            // Create post geometry (above ground)
+            // Create post geometry (above ground) - extends to top of sign
             let aboveGroundGeometry;
             if (sectionType === 'circular') {
-                aboveGroundGeometry = new THREE.CylinderGeometry(postDiameter/2, postDiameter/2, postHeight, 32);
+                aboveGroundGeometry = new THREE.CylinderGeometry(postDiameter/2, postDiameter/2, totalPostHeight, 32);
             } else {
-                aboveGroundGeometry = new THREE.BoxGeometry(postDiameter, postHeight, postDiameter);
+                aboveGroundGeometry = new THREE.BoxGeometry(postDiameter, totalPostHeight, postDiameter);
             }
             
             // Create foundation geometry (below ground)
@@ -903,9 +900,9 @@
             
             // Create posts at calculated positions
             postPositions.forEach((xPos, index) => {
-                // Above ground post
+                // Above ground post - extends to top of sign
                 const post = new THREE.Mesh(aboveGroundGeometry.clone(), postMaterial);
-                post.position.set(xPos, postHeight / 2, 0);
+                post.position.set(xPos, totalPostHeight / 2, 0);
                 post.castShadow = true;
                 postGroup.add(post);
                 
@@ -926,17 +923,17 @@
                     roughness: material !== 'timber' ? 0.3 : 0.8
                 });
                 
-                // Top beam (at sign height)
+                // Top beam (at top of sign)
                 const topBeam = new THREE.Mesh(beamGeometry, beamMaterial);
                 topBeam.rotation.z = Math.PI / 2; // Rotate to horizontal
-                topBeam.position.set(0, postHeight + baseHeight + signHeight, 0);
+                topBeam.position.set(0, totalPostHeight, 0);
                 topBeam.castShadow = true;
                 postGroup.add(topBeam);
                 
-                // Bottom beam (at sign base)
+                // Bottom beam (at bottom of sign)
                 const bottomBeam = new THREE.Mesh(beamGeometry.clone(), beamMaterial);
                 bottomBeam.rotation.z = Math.PI / 2;
-                bottomBeam.position.set(0, postHeight + baseHeight, 0);
+                bottomBeam.position.set(0, postHeight, 0);
                 bottomBeam.castShadow = true;
                 postGroup.add(bottomBeam);
             }
@@ -952,7 +949,7 @@
                 roughness: 0.6
             });
             signMesh = new THREE.Mesh(signGeometry, signMaterial);
-            signMesh.position.y = postHeight + baseHeight + signHeight / 2;
+            signMesh.position.y = postHeight + signHeight / 2; // Sign sits on top of posts
             signMesh.castShadow = true;
             scene.add(signMesh);
             
@@ -994,11 +991,10 @@
         function calculate() {
             const width = parseFloat(document.getElementById('sign-width').value);
             const height = parseFloat(document.getElementById('sign-height').value);
-            const baseHeight = parseFloat(document.getElementById('base-height').value);
+            const postHeight = parseFloat(document.getElementById('post-height').value);
             const altitude = parseFloat(document.getElementById('altitude').value);
             const v_map = parseFloat(document.getElementById('vmap').value);
             const terrain = document.getElementById('terrain').value;
-            const postHeight = parseFloat(document.getElementById('post-height').value);
             const postDiameter = parseFloat(document.getElementById('post-diameter').value);
             const thickness = parseFloat(document.getElementById('wall-thickness').value);
             const material = document.getElementById('post-material').value;
@@ -1014,7 +1010,8 @@
             const q_p = 0.613 * Math.pow(v_b, 2) * c_e * 0.89 * 1.07;
             const A_ref = width * height;
             const F_w = q_p * A_ref * 1.1 / 1000;
-            const leverArm = baseHeight + height / 2;
+            // Lever arm from ground to center of sign
+            const leverArm = postHeight + height / 2;
             const M_total = F_w * leverArm;
             
             // Distribute moment among posts
@@ -1073,7 +1070,7 @@
             
             // Update print fields
             document.getElementById('print-sign-dims').textContent = 
-                `${width}m × ${height}m, Base height: ${baseHeight}m`;
+                `${width}m × ${height}m`;
             document.getElementById('print-location').textContent = 
                 `${document.getElementById('postcode').value || 'Not specified'}, Altitude: ${altitude}m, v_map: ${v_map} m/s, Terrain: ${terrain}`;
             document.getElementById('print-post-config').textContent = 
