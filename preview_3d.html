@@ -534,10 +534,13 @@
                 </div>
                 <div class="input-row">
                     <label>Rib/Channel spacing (mm)*</label>
-                    <input type="number" id="channel-spacing" value="400" step="50" oninput="updateScene(); calculate()">
+                    <input type="number" id="channel-spacing" value="400" step="50" min="0" oninput="updateScene(); calculate()">
                 </div>
-                <div style="font-size: 9px; color: #aaa; margin-top: -8px; line-height: 1.3;">
-                    *Assumed to be medium sign channel/rib profile (typical depth 50-75mm). Ribs provide stiffening to prevent panel deflection under wind load. Maximum recommended spacing: 400-600mm depending on panel material and wind pressure.
+                <div style="font-size: 11px; color: #667eea; margin-top: 5px; font-weight: 600;">
+                    Calculated ribs required: <span id="calc-ribs">---</span>
+                </div>
+                <div style="font-size: 9px; color: #aaa; margin-top: 5px; line-height: 1.3;">
+                    *Assumed to be medium sign channel/rib profile (typical depth 50-75mm). Ribs provide stiffening to prevent panel deflection under wind load. Maximum recommended spacing: 400-600mm depending on panel material and wind pressure. Enter 0 for no ribs.
                 </div>
             </div>
         </div>
@@ -693,7 +696,6 @@
             <div class="result-card">
                 <h4>Panel Deflection</h4>
                 <div class="value" id="result-deflection">---<span class="unit">mm</span></div>
-                <div style="font-size: 9px; color: #888; margin-top: 5px;">Limit: <span id="deflection-limit">---</span> mm (L/200)</div>
             </div>
             <div class="result-card status" id="result-status-card">
                 <h4>Overall Status</h4>
@@ -958,19 +960,21 @@
             signMesh.castShadow = true;
             scene.add(signMesh);
             
-            // Add sign channels (horizontal lines on the face)
-            const numChannels = Math.ceil(signHeight * 1000 / channelSpacing) + 1;
-            const channelMaterial = new THREE.LineBasicMaterial({ color: 0x1e3c72, linewidth: 2 });
-            
-            for (let i = 0; i < numChannels; i++) {
-                const yOffset = (i / (numChannels - 1)) * signHeight - signHeight / 2;
-                const points = [];
-                points.push(new THREE.Vector3(-signWidth/2, signMesh.position.y + yOffset, 0.026));
-                points.push(new THREE.Vector3(signWidth/2, signMesh.position.y + yOffset, 0.026));
-                const geometry = new THREE.BufferGeometry().setFromPoints(points);
-                const line = new THREE.Line(geometry, channelMaterial);
-                scene.add(line);
-                if (!windArrow) windArrow = new THREE.Group(); // Store lines for cleanup
+            // Add sign channels (horizontal lines on the face) - only if spacing > 0
+            if (channelSpacing > 0) {
+                const numChannels = Math.ceil(signHeight * 1000 / channelSpacing) + 1;
+                const channelMaterial = new THREE.LineBasicMaterial({ color: 0x1e3c72, linewidth: 2 });
+                
+                for (let i = 0; i < numChannels; i++) {
+                    const yOffset = (i / (numChannels - 1)) * signHeight - signHeight / 2;
+                    const points = [];
+                    points.push(new THREE.Vector3(-signWidth/2, signMesh.position.y + yOffset, 0.026));
+                    points.push(new THREE.Vector3(signWidth/2, signMesh.position.y + yOffset, 0.026));
+                    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                    const line = new THREE.Line(geometry, channelMaterial);
+                    scene.add(line);
+                    if (!windArrow) windArrow = new THREE.Group(); // Store lines for cleanup
+                }
             }
             
             // Add wind arrow - pointing at the FACE of the sign (Z direction)
@@ -1049,12 +1053,24 @@
             const I = mat.I_per_width * stripWidth;
             const W_panel = mat.W_per_width * stripWidth;
             const w = q_p / 1000;
-            const delta = (5 * w * Math.pow(channelSpacing, 4)) / (384 * mat.E * I);
-            const deltaLimit = channelSpacing / 200;
-            const M_panel = (w * Math.pow(channelSpacing, 2)) / 8;
-            const sigma_panel = M_panel / W_panel;
-            const panelOk = delta <= deltaLimit && sigma_panel <= mat.f_y;
-            const numChannels = Math.ceil(height * 1000 / channelSpacing) + 1;
+            
+            // Handle zero spacing (no ribs)
+            let delta, deltaLimit, M_panel, sigma_panel, panelOk, numChannels;
+            if (channelSpacing === 0) {
+                delta = 0;
+                deltaLimit = 0;
+                M_panel = 0;
+                sigma_panel = 0;
+                panelOk = true;
+                numChannels = 0;
+            } else {
+                delta = (5 * w * Math.pow(channelSpacing, 4)) / (384 * mat.E * I);
+                deltaLimit = channelSpacing / 200;
+                M_panel = (w * Math.pow(channelSpacing, 2)) / 8;
+                sigma_panel = M_panel / W_panel;
+                panelOk = delta <= deltaLimit && sigma_panel <= mat.f_y;
+                numChannels = Math.ceil(height * 1000 / channelSpacing) + 1;
+            }
             
             // Update results
             document.getElementById('result-pressure').innerHTML = `${Math.round(q_p)}<span class="unit">Pa</span>`;
@@ -1063,7 +1079,7 @@
             document.getElementById('result-util').innerHTML = `${(eta * 100).toFixed(0)}<span class="unit">%</span>`;
             document.getElementById('result-channels').innerHTML = numChannels;
             document.getElementById('result-deflection').innerHTML = `${delta.toFixed(2)}<span class="unit">mm</span>`;
-            document.getElementById('deflection-limit').textContent = deltaLimit.toFixed(2);
+            document.getElementById('calc-ribs').textContent = numChannels;
             
             const statusCard = document.getElementById('result-status-card');
             const statusText = document.getElementById('result-status');
