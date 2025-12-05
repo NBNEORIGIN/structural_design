@@ -690,6 +690,11 @@
                 <h4>Channels Required</h4>
                 <div class="value" id="result-channels">---</div>
             </div>
+            <div class="result-card">
+                <h4>Panel Deflection</h4>
+                <div class="value" id="result-deflection">---<span class="unit">mm</span></div>
+                <div style="font-size: 9px; color: #888; margin-top: 5px;">Limit: <span id="deflection-limit">---</span> mm (L/200)</div>
+            </div>
             <div class="result-card status" id="result-status-card">
                 <h4>Overall Status</h4>
                 <div class="value" id="result-status">READY</div>
@@ -1057,6 +1062,8 @@
             document.getElementById('result-moment').innerHTML = `${M_per_post.toFixed(2)}<span class="unit">kNm/post</span>`;
             document.getElementById('result-util').innerHTML = `${(eta * 100).toFixed(0)}<span class="unit">%</span>`;
             document.getElementById('result-channels').innerHTML = numChannels;
+            document.getElementById('result-deflection').innerHTML = `${delta.toFixed(2)}<span class="unit">mm</span>`;
+            document.getElementById('deflection-limit').textContent = deltaLimit.toFixed(2);
             
             const statusCard = document.getElementById('result-status-card');
             const statusText = document.getElementById('result-status');
