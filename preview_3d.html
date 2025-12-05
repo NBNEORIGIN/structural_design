@@ -969,6 +969,155 @@
             });
         }
         
+        function renderProjectingSign(signWidth, signHeight) {
+            const projectionDepth = parseFloat(document.getElementById('projection-depth').value);
+            const mountHeight = parseFloat(document.getElementById('proj-mount-height').value);
+            const bracketType = document.getElementById('bracket-type').value;
+            const numFixings = parseInt(document.getElementById('bracket-fixings').value);
+            const channelSpacing = parseFloat(document.getElementById('channel-spacing').value);
+            
+            // Create wall (vertical plane)
+            const wallGeometry = new THREE.PlaneGeometry(8, 6);
+            const wallMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x4a4a4a,
+                side: THREE.DoubleSide,
+                roughness: 0.8
+            });
+            const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+            wall.position.set(0, 3, 0); // At origin Z
+            wall.receiveShadow = true;
+            postMesh = wall; // Reuse for cleanup
+            scene.add(wall);
+            
+            // Create sign panel (perpendicular to wall, projecting outward)
+            const signGeometry = new THREE.BoxGeometry(signWidth, signHeight, 0.05);
+            const signMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xFFFFFF,
+                metalness: 0.1,
+                roughness: 0.6
+            });
+            signMesh = new THREE.Mesh(signGeometry, signMaterial);
+            // Rotate 90 degrees to be perpendicular to wall
+            signMesh.rotation.y = Math.PI / 2;
+            // Position: projecting from wall at mount height
+            signMesh.position.set(0, mountHeight + signHeight / 2, projectionDepth / 2);
+            signMesh.castShadow = true;
+            scene.add(signMesh);
+            
+            // Create brackets
+            const bracketMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x708090,
+                metalness: 0.7,
+                roughness: 0.3
+            });
+            
+            if (bracketType === 'top_bottom') {
+                // Top bracket
+                const topBracket = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.1, 0.1, projectionDepth),
+                    bracketMaterial
+                );
+                topBracket.position.set(0, mountHeight + signHeight - 0.1, projectionDepth / 2);
+                topBracket.castShadow = true;
+                scene.add(topBracket);
+                
+                // Bottom bracket
+                const bottomBracket = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.1, 0.1, projectionDepth),
+                    bracketMaterial
+                );
+                bottomBracket.position.set(0, mountHeight + 0.1, projectionDepth / 2);
+                bottomBracket.castShadow = true;
+                scene.add(bottomBracket);
+                
+                // Wall fixings for top bracket
+                const fixingGeometry = new THREE.SphereGeometry(0.04, 16, 16);
+                const fixingMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, metalness: 0.8 });
+                for (let i = 0; i < numFixings; i++) {
+                    const fixing = new THREE.Mesh(fixingGeometry, fixingMaterial);
+                    const spacing = numFixings > 1 ? 0.3 / (numFixings - 1) : 0;
+                    fixing.position.set(-0.15 + i * spacing, mountHeight + signHeight - 0.1, 0.02);
+                    scene.add(fixing);
+                }
+                // Wall fixings for bottom bracket
+                for (let i = 0; i < numFixings; i++) {
+                    const fixing = new THREE.Mesh(fixingGeometry, fixingMaterial);
+                    const spacing = numFixings > 1 ? 0.3 / (numFixings - 1) : 0;
+                    fixing.position.set(-0.15 + i * spacing, mountHeight + 0.1, 0.02);
+                    scene.add(fixing);
+                }
+            } else if (bracketType === 'top_only') {
+                // Single top bracket
+                const topBracket = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.12, 0.12, projectionDepth),
+                    bracketMaterial
+                );
+                topBracket.position.set(0, mountHeight + signHeight - 0.1, projectionDepth / 2);
+                topBracket.castShadow = true;
+                scene.add(topBracket);
+                
+                // Wall fixings
+                const fixingGeometry = new THREE.SphereGeometry(0.04, 16, 16);
+                const fixingMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, metalness: 0.8 });
+                for (let i = 0; i < numFixings; i++) {
+                    const fixing = new THREE.Mesh(fixingGeometry, fixingMaterial);
+                    const spacing = numFixings > 1 ? 0.3 / (numFixings - 1) : 0;
+                    fixing.position.set(-0.15 + i * spacing, mountHeight + signHeight - 0.1, 0.02);
+                    scene.add(fixing);
+                }
+            } else { // cantilever
+                // Central cantilever bracket
+                const bracket = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.12, 0.12, projectionDepth),
+                    bracketMaterial
+                );
+                bracket.position.set(0, mountHeight + signHeight / 2, projectionDepth / 2);
+                bracket.castShadow = true;
+                scene.add(bracket);
+                
+                // Wall fixings
+                const fixingGeometry = new THREE.SphereGeometry(0.04, 16, 16);
+                const fixingMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, metalness: 0.8 });
+                for (let i = 0; i < numFixings; i++) {
+                    const fixing = new THREE.Mesh(fixingGeometry, fixingMaterial);
+                    const yOffset = (i - (numFixings - 1) / 2) * 0.15;
+                    fixing.position.set(0, mountHeight + signHeight / 2 + yOffset, 0.02);
+                    scene.add(fixing);
+                }
+            }
+            
+            // Add sign channels (horizontal lines on edge view)
+            if (channelSpacing > 0) {
+                const numChannels = Math.ceil(signHeight * 1000 / channelSpacing) + 1;
+                const channelMaterial = new THREE.LineBasicMaterial({ color: 0x1e3c72, linewidth: 2 });
+                
+                for (let i = 0; i < numChannels; i++) {
+                    const yOffset = (i / (numChannels - 1)) * signHeight - signHeight / 2;
+                    const points = [];
+                    // Lines run along the depth (Z direction) since sign is rotated
+                    points.push(new THREE.Vector3(0, signMesh.position.y + yOffset, 0.05));
+                    points.push(new THREE.Vector3(0, signMesh.position.y + yOffset, projectionDepth - 0.05));
+                    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                    const line = new THREE.Line(geometry, channelMaterial);
+                    scene.add(line);
+                }
+            }
+            
+            // Add wind arrow - from the side hitting the edge
+            const arrowHelper = new THREE.ArrowHelper(
+                new THREE.Vector3(0, 0, -1), // Direction: from front toward wall
+                new THREE.Vector3(0, mountHeight + signHeight/2, projectionDepth + 1.5), // Start position
+                1.5, // Length
+                0xff0000, // Red color
+                0.4, // Head length
+                0.25 // Head width
+            );
+            windArrow = arrowHelper;
+            scene.add(windArrow);
+            
+            renderer.render(scene, camera);
+        }
+        
         function renderWallMountedSign(signWidth, signHeight) {
             const mountHeight = parseFloat(document.getElementById('wall-mount-height').value);
             const numFixings = parseInt(document.getElementById('num-fixings').value);
@@ -1112,6 +1261,9 @@
             // Route to appropriate rendering function based on sign type
             if (currentSignType === 'wall_mounted') {
                 renderWallMountedSign(signWidth, signHeight);
+                return;
+            } else if (currentSignType === 'projecting') {
+                renderProjectingSign(signWidth, signHeight);
                 return;
             }
             
