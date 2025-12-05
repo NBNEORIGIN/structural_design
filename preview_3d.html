@@ -1196,8 +1196,115 @@
             renderer.render(scene, camera);
         }
         
-        // Calculation functions (same as before)
+        // Calculation functions
+        function calculateWallMounted() {
+            // Get inputs
+            const width = parseFloat(document.getElementById('sign-width').value);
+            const height = parseFloat(document.getElementById('sign-height').value);
+            const mountHeight = parseFloat(document.getElementById('wall-mount-height').value);
+            const altitude = parseFloat(document.getElementById('altitude').value);
+            const v_map = parseFloat(document.getElementById('vmap').value);
+            const terrain = document.getElementById('terrain').value;
+            const fixingType = document.getElementById('fixing-type').value;
+            const numFixings = parseInt(document.getElementById('num-fixings').value);
+            const hSpacing = parseFloat(document.getElementById('fixing-h-spacing').value) / 1000; // mm to m
+            const vSpacing = parseFloat(document.getElementById('fixing-v-spacing').value) / 1000; // mm to m
+            const panelMaterial = document.getElementById('panel-material').value;
+            const channelSpacing = parseFloat(document.getElementById('channel-spacing').value);
+            
+            // Wind pressure calculation (same as post-mounted)
+            const c_alt = 1 + 0.001 * altitude;
+            let c_e = terrain === 'sea' ? 3.0 : terrain === 'country' ? 2.5 : 2.0;
+            const v_b = v_map * c_alt;
+            const q_p = 0.613 * Math.pow(v_b, 2) * c_e * 0.89 * 1.07;
+            
+            // Wind force on sign
+            const A_ref = width * height;
+            const c_f = 1.8; // Force coefficient for signboards
+            const F_w = q_p * A_ref * c_f / 1000; // kN
+            
+            // Fixing capacities (typical values in kN)
+            const fixingCapacities = {
+                'mechanical': { tension: 15, shear: 10 },
+                'chemical': { tension: 25, shear: 15 },
+                'through_bolt': { tension: 35, shear: 20 }
+            };
+            const T_capacity = fixingCapacities[fixingType].tension;
+            const V_capacity = fixingCapacities[fixingType].shear;
+            
+            // Eccentricity (distance from wall to sign center of pressure)
+            const eccentricity = 0.1; // 100mm typical
+            
+            // Moment from eccentricity
+            const M_eccentric = F_w * eccentricity;
+            
+            // Tension per fixing (from moment + direct wind force)
+            // Moment creates tension in fixings furthest from neutral axis
+            const T_moment = M_eccentric / vSpacing; // Tension from moment
+            const T_direct = F_w / numFixings; // Direct tension from wind
+            const T_per_fixing = T_moment + T_direct;
+            
+            // Shear per fixing (from sign self-weight with safety factor)
+            const signWeight = width * height * 0.05; // Approximate weight in kN (50 kg/m²)
+            const V_per_fixing = (signWeight * 1.5) / numFixings; // 1.5 safety factor
+            
+            // Combined utilization (interaction formula)
+            const eta_combined = Math.sqrt(Math.pow(T_per_fixing / T_capacity, 2) + Math.pow(V_per_fixing / V_capacity, 2));
+            
+            // Panel deflection check
+            const mat = MATERIALS[panelMaterial];
+            const stripWidth = 1000;
+            const I = mat.I_per_width * stripWidth;
+            const w = q_p / 1000;
+            
+            let delta, deltaLimit, numChannels;
+            if (channelSpacing === 0) {
+                delta = 0;
+                deltaLimit = 0;
+                numChannels = 0;
+            } else {
+                delta = (5 * w * Math.pow(channelSpacing, 4)) / (384 * mat.E * I);
+                deltaLimit = channelSpacing / 200;
+                numChannels = Math.ceil(height * 1000 / channelSpacing) + 1;
+            }
+            
+            // Update results
+            document.getElementById('result-pressure').innerHTML = `${Math.round(q_p)}<span class="unit">Pa</span>`;
+            document.getElementById('result-force').innerHTML = `${F_w.toFixed(2)}<span class="unit">kN</span>`;
+            document.getElementById('result-moment').innerHTML = `${T_per_fixing.toFixed(2)}<span class="unit">kN/fixing</span>`;
+            document.getElementById('result-util').innerHTML = `${(eta_combined * 100).toFixed(0)}<span class="unit">%</span>`;
+            document.getElementById('result-channels').innerHTML = numChannels;
+            document.getElementById('result-deflection').innerHTML = `${delta.toFixed(2)}<span class="unit">mm</span>`;
+            document.getElementById('calc-ribs').textContent = numChannels;
+            
+            const statusCard = document.getElementById('result-status-card');
+            const statusText = document.getElementById('result-status');
+            if (eta_combined <= 1.0) {
+                statusCard.classList.remove('inadequate');
+                statusText.textContent = 'ADEQUATE';
+            } else {
+                statusCard.classList.add('inadequate');
+                statusText.textContent = 'INADEQUATE';
+            }
+            
+            // Update print fields
+            document.getElementById('print-sign-dims').textContent = `${width}m × ${height}m`;
+            document.getElementById('print-location').textContent = 
+                `${document.getElementById('postcode').value || 'Not specified'}, Altitude: ${altitude}m, v_map: ${v_map} m/s, Terrain: ${terrain}`;
+            document.getElementById('print-post-config').textContent = 
+                `Wall-mounted, ${numFixings} fixings, ${fixingType} anchors, Mount height: ${mountHeight}m`;
+            document.getElementById('print-material').textContent = 
+                `${fixingType} fixings (T: ${T_capacity}kN, V: ${V_capacity}kN), Panel: ${MATERIALS[panelMaterial].name}, Rib spacing: ${channelSpacing}mm`;
+        }
+        
         function calculate() {
+            // Route to appropriate calculation based on sign type
+            if (currentSignType === 'wall_mounted') {
+                calculateWallMounted();
+                return;
+            }
+            
+            // POST-MOUNTED CALCULATIONS (existing code)
             const width = parseFloat(document.getElementById('sign-width').value);
             const height = parseFloat(document.getElementById('sign-height').value);
             const postHeight = parseFloat(document.getElementById('post-height').value);
