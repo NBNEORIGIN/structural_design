@@ -946,11 +946,16 @@
                     rotation.y += deltaX * 0.005;
                     rotation.x += deltaY * 0.005;
                     
-                    // Update camera position
-                    const radius = 20;
-                    camera.position.x = radius * Math.sin(rotation.y) * Math.cos(rotation.x);
-                    camera.position.y = radius * Math.sin(rotation.x) + 5;
-                    camera.position.z = radius * Math.cos(rotation.y) * Math.cos(rotation.x);
+                    // Update camera position - preserve current zoom level
+                    // Calculate current radius from camera position
+                    const currentRadius = Math.sqrt(
+                        Math.pow(camera.position.x, 2) + 
+                        Math.pow(camera.position.y - 5, 2) + 
+                        Math.pow(camera.position.z, 2)
+                    );
+                    camera.position.x = currentRadius * Math.sin(rotation.y) * Math.cos(rotation.x);
+                    camera.position.y = currentRadius * Math.sin(rotation.x) + 5;
+                    camera.position.z = currentRadius * Math.cos(rotation.y) * Math.cos(rotation.x);
                     camera.lookAt(0, 3, 0);
                     
                     previousMousePosition = { x: e.clientX, y: e.clientY };
